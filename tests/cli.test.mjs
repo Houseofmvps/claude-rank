@@ -9,7 +9,7 @@ const FIXTURES = path.join(import.meta.dirname, 'fixtures', 'good-seo-dir');
 
 describe('CLI', () => {
   it('outputs valid JSON for scan command', () => {
-    const out = execFileSync('node', [BIN, 'scan', FIXTURES], { encoding: 'utf8' });
+    const out = execFileSync('node', [BIN, 'scan', FIXTURES, '--json'], { encoding: 'utf8' });
     const parsed = JSON.parse(out);
     assert.ok('scores' in parsed);
   });

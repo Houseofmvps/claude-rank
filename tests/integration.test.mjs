@@ -25,7 +25,8 @@ describe('integration', () => {
     const out = execFileSync('node', [
       path.join(ROOT, 'bin', 'claude-rank.mjs'),
       'scan',
-      path.join(FIXTURES, 'good-seo-dir')
+      path.join(FIXTURES, 'good-seo-dir'),
+      '--json'
     ], { encoding: 'utf8' });
     const parsed = JSON.parse(out);
     assert.ok(parsed.scores.seo >= 0);
