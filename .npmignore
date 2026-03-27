@@ -1,0 +1,13 @@
+# Dev and test files — excluded from npm publish
+tests/
+node_modules/
+*.log
+*.lock
+package-lock.json
+install.sh
+install.ps1
+uninstall.sh
+uninstall.ps1
+.npmrc
+.env
+.env.*
