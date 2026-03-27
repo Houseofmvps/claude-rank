@@ -1,5 +1,6 @@
 node_modules/
 .env
+.npmrc
 .claude-rank/
 coverage/
 *.tgz

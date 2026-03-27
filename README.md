@@ -4,7 +4,7 @@
 
 Audit, fix, and dominate search — traditional and AI.
 
-[![npm version](https://img.shields.io/npm/v/claude-rank.svg)](https://www.npmjs.com/package/claude-rank)
+[![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank.svg)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Node.js >= 18](https://img.shields.io/badge/node-%3E%3D18-brightgreen.svg)](https://nodejs.org/)
 
@@ -31,19 +31,13 @@ Most SEO tools stop at traditional search. claude-rank covers the full picture:
 No install required:
 
 ```bash
-npx claude-rank scan ./my-project
+npx @houseofmvps/claude-rank scan ./my-project
 ```
 
 Or install globally:
 
 ```bash
-npm install -g claude-rank
-```
-
-As a Claude Code plugin, add it to your project:
-
-```bash
-npx claude-rank install
+npm install -g @houseofmvps/claude-rank
 ```
 
 Then use slash commands directly inside Claude Code:
@@ -58,10 +52,10 @@ Then use slash commands directly inside Claude Code:
 
 | Command | Description |
 |---------|-------------|
-| `npx claude-rank scan ./project` | Full SEO scan |
-| `npx claude-rank geo ./project` | GEO (AI search) scan |
-| `npx claude-rank aeo ./project` | AEO (answer engine) scan |
-| `npx claude-rank schema ./project` | Structured data detection |
+| `npx @houseofmvps/claude-rank scan ./project` | Full SEO scan |
+| `npx @houseofmvps/claude-rank geo ./project` | GEO (AI search) scan |
+| `npx @houseofmvps/claude-rank aeo ./project` | AEO (answer engine) scan |
+| `npx @houseofmvps/claude-rank schema ./project` | Structured data detection |
 
 ---
 

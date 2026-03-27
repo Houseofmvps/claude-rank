@@ -25,7 +25,7 @@ Commands:
 
 Examples:
   claude-rank scan ./my-project
-  npx claude-rank geo .
+  npx @houseofmvps/claude-rank geo .
 `);
   process.exit(0);
 }
