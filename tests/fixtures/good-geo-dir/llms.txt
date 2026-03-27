@@ -1,0 +1,4 @@
+# Example
+> GEO optimization guide for marketing agencies.
+## Documentation
+- [GEO Guide](https://example.com/geo-guide): Complete guide to Generative Engine Optimization
