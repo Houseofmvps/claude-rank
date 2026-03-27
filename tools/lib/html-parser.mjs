@@ -445,6 +445,51 @@ export function parseHtml(htmlString) {
 }
 
 // ---------------------------------------------------------------------------
+// detectPageType — classify page type from URL path + parsed state
+// ---------------------------------------------------------------------------
+
+/**
+ * Page type patterns — ordered by priority (first match wins).
+ * Each entry: { type, patterns[] } where patterns are matched against
+ * the lowercase URL path, title, and h1 text.
+ */
+const PAGE_TYPE_RULES = [
+  { type: 'contact',  patterns: ['contact', 'get in touch', 'reach us'] },
+  { type: 'terms',    patterns: ['terms', 'conditions', 'tos', 'terms-of-service'] },
+  { type: 'privacy',  patterns: ['privacy', 'cookie policy', 'gdpr'] },
+  { type: 'legal',    patterns: ['legal', 'disclaimer', 'imprint'] },
+  { type: 'login',    patterns: ['login', 'signin', 'sign-in', 'register', 'signup'] },
+  { type: '404',      patterns: ['404', 'not found', 'page not found'] },
+  { type: 'sitemap',  patterns: ['sitemap'] },
+];
+
+/**
+ * Detect the page type from the file path / URL and parsed HTML state.
+ * Returns a page type string: 'contact', 'terms', 'privacy', 'legal',
+ * 'login', '404', 'sitemap', or 'content' (default).
+ *
+ * @param {string} filePath — file path or URL (used for path-based signals)
+ * @param {object} state — PageState from parseHtml
+ * @returns {string} page type
+ */
+export function detectPageType(filePath, state) {
+  // Build a combined haystack from path, title, and h1
+  const pathLower = (filePath || '').toLowerCase();
+  const titleLower = (state.titleText || '').toLowerCase();
+  const h1Lower = (state.h1Text || '').toLowerCase();
+
+  for (const { type, patterns } of PAGE_TYPE_RULES) {
+    for (const pattern of patterns) {
+      if (pathLower.includes(pattern) || titleLower.includes(pattern) || h1Lower.includes(pattern)) {
+        return type;
+      }
+    }
+  }
+
+  return 'content';
+}
+
+// ---------------------------------------------------------------------------
 // parseHtmlFile — read file then parseHtml
 // ---------------------------------------------------------------------------
 

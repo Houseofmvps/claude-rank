@@ -2,10 +2,12 @@
  * url-scanner.mjs — Scan a live URL for SEO issues.
  * Fetches HTML from a URL and runs the same per-page analysis as seo-scanner.
  * Cross-page rules (duplicates, orphans, canonicals) are skipped for single-URL scans.
+ * scanSite() crawls multiple pages and adds cross-page analysis.
  */
 
-import { parseHtml } from './lib/html-parser.mjs';
+import { parseHtml, detectPageType } from './lib/html-parser.mjs';
 import { fetchPage } from './lib/url-fetcher.mjs';
+import { crawlSite } from './lib/crawler.mjs';
 
 // ---------------------------------------------------------------------------
 // Rule definitions (same as seo-scanner, minus cross-page-only rules)
@@ -52,6 +54,11 @@ const RULES = {
   'no-manifest':               { severity: 'low', deduction: 2 },
   'all-scripts-blocking':      { severity: 'low', deduction: 2 },
 
+  // Cross-page rules (multi-page crawl only)
+  'duplicate-title':           { severity: 'high', deduction: 10 },
+  'duplicate-meta-description':{ severity: 'high', deduction: 10 },
+  'canonical-conflict':        { severity: 'high', deduction: 10 },
+
   // HTTP-level rules (URL-scan only)
   'http-error':                { severity: 'critical', deduction: 20 },
   'redirect-detected':         { severity: 'low', deduction: 2 },
@@ -61,8 +68,16 @@ const RULES = {
 // Per-page rule checks (reused from seo-scanner logic)
 // ---------------------------------------------------------------------------
 
+// Page types where thin content is expected and should not be flagged
+const THIN_CONTENT_EXEMPT = new Set(['contact', 'terms', 'privacy', 'legal', 'login', '404', 'sitemap']);
+// Page types where missing analytics is expected
+const NO_ANALYTICS_EXEMPT = new Set(['terms', 'privacy', 'legal']);
+// Page types where missing OG image is expected
+const NO_OG_IMAGE_EXEMPT = new Set(['terms', 'privacy', 'legal']);
+
 function checkPage(state, pageUrl) {
   const findings = [];
+  const pageType = detectPageType(pageUrl, state);
 
   function add(rule, message, context = {}) {
     const def = RULES[rule];
@@ -71,6 +86,7 @@ function checkPage(state, pageUrl) {
       severity: def.severity,
       file: pageUrl,
       message,
+      pageType,
       ...context,
     });
   }
@@ -109,7 +125,7 @@ function checkPage(state, pageUrl) {
     add('missing-h1', 'Page has no <h1> heading');
   }
 
-  if (state.wordCount > 0 && state.wordCount < 300) {
+  if (state.wordCount > 0 && state.wordCount < 300 && !THIN_CONTENT_EXEMPT.has(pageType)) {
     add('thin-content', `Page has only ${state.wordCount} words (minimum recommended: 300)`);
   }
 
@@ -150,7 +166,7 @@ function checkPage(state, pageUrl) {
     add('missing-og-description', 'Page is missing og:description Open Graph tag');
   }
 
-  if (!state.hasOgImage) {
+  if (!state.hasOgImage && !NO_OG_IMAGE_EXEMPT.has(pageType)) {
     add('missing-og-image', 'Page is missing og:image Open Graph tag');
   }
 
@@ -191,7 +207,7 @@ function checkPage(state, pageUrl) {
     add('missing-favicon', 'Page is missing a favicon link');
   }
 
-  if (!state.hasAnalytics) {
+  if (!state.hasAnalytics && !NO_ANALYTICS_EXEMPT.has(pageType)) {
     add('no-analytics', 'No analytics provider detected on this page');
   }
 
@@ -330,6 +346,151 @@ export async function scanUrl(url) {
       redirected: page.redirected,
       finalUrl: page.finalUrl,
     },
+  };
+}
+
+// ---------------------------------------------------------------------------
+// Cross-page checks (for multi-page crawl)
+// ---------------------------------------------------------------------------
+
+function crossPageChecks(allStates) {
+  const findings = [];
+
+  // --- Duplicate title detection ---
+  const titleMap = new Map();
+  for (const { url, state } of allStates) {
+    if (state.hasTitle && state.titleText) {
+      const title = state.titleText.trim().toLowerCase();
+      if (!titleMap.has(title)) titleMap.set(title, []);
+      titleMap.get(title).push(url);
+    }
+  }
+  for (const [title, urls] of titleMap) {
+    if (urls.length > 1) {
+      for (const pageUrl of urls) {
+        findings.push({
+          rule: 'duplicate-title',
+          severity: RULES['duplicate-title'].severity,
+          file: pageUrl,
+          message: `Duplicate title "${title}" shared across ${urls.length} pages`,
+          duplicates: urls,
+        });
+      }
+    }
+  }
+
+  // --- Duplicate meta description detection ---
+  const descMap = new Map();
+  for (const { url, state } of allStates) {
+    if (state.hasMetaDescription && state.metaDescriptionText) {
+      const desc = state.metaDescriptionText.trim().toLowerCase();
+      if (!descMap.has(desc)) descMap.set(desc, []);
+      descMap.get(desc).push(url);
+    }
+  }
+  for (const [, urls] of descMap) {
+    if (urls.length > 1) {
+      for (const pageUrl of urls) {
+        findings.push({
+          rule: 'duplicate-meta-description',
+          severity: RULES['duplicate-meta-description'].severity,
+          file: pageUrl,
+          message: `Duplicate meta description shared across ${urls.length} pages`,
+          duplicates: urls,
+        });
+      }
+    }
+  }
+
+  // --- Canonical conflict detection ---
+  const canonicalMap = new Map();
+  for (const { url, state } of allStates) {
+    if (state.hasCanonical && state.canonicalUrl) {
+      const canonical = state.canonicalUrl.trim();
+      if (!canonicalMap.has(canonical)) canonicalMap.set(canonical, []);
+      canonicalMap.get(canonical).push(url);
+    }
+  }
+  for (const [canonical, urls] of canonicalMap) {
+    if (urls.length > 1) {
+      for (const pageUrl of urls) {
+        findings.push({
+          rule: 'canonical-conflict',
+          severity: RULES['canonical-conflict'].severity,
+          file: pageUrl,
+          message: `Multiple pages share canonical URL "${canonical}"`,
+          duplicates: urls,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+// ---------------------------------------------------------------------------
+// scanSite — crawl + analyse multiple pages
+// ---------------------------------------------------------------------------
+
+/**
+ * Crawl and scan an entire site.
+ * @param {string} startUrl
+ * @param {object} [options] — passed to crawlSite (maxPages, concurrency)
+ * @returns {Promise<object>} — { url, pages_scanned, files_scanned, findings, scores, summary, errors }
+ */
+export async function scanSite(startUrl, options = {}) {
+  // 1. Crawl the site
+  const crawlResult = await crawlSite(startUrl, options);
+
+  // 2. Parse each page and run per-page checks
+  const allStates = [];
+  const perPageFindings = [];
+
+  for (const page of crawlResult.pages) {
+    const state = parseHtml(page.html);
+    allStates.push({ url: page.url, state });
+
+    const pageFindings = checkPage(state, page.url);
+
+    // HTTP-level checks
+    if (page.statusCode >= 400) {
+      const def = RULES['http-error'];
+      pageFindings.unshift({
+        rule: 'http-error',
+        severity: def.severity,
+        file: page.url,
+        message: `HTTP ${page.statusCode} error response`,
+      });
+    }
+
+    perPageFindings.push(...pageFindings);
+  }
+
+  // 3. Run cross-page checks (duplicate titles, descriptions, canonical conflicts)
+  const multiPage = allStates.length > 1;
+  const crossFindings = multiPage ? crossPageChecks(allStates) : [];
+
+  const allFindings = [...perPageFindings, ...crossFindings];
+
+  // 4. Calculate deduplicated score
+  const seoScore = calculateScore(allFindings);
+
+  // 5. Summary counts
+  const summary = { critical: 0, high: 0, medium: 0, low: 0 };
+  for (const f of allFindings) {
+    if (summary[f.severity] !== undefined) {
+      summary[f.severity]++;
+    }
+  }
+
+  return {
+    url: startUrl,
+    pages_scanned: crawlResult.pages.length,
+    files_scanned: crawlResult.pages.length,
+    findings: allFindings,
+    scores: { seo: seoScore },
+    summary,
+    errors: crawlResult.errors,
   };
 }
 

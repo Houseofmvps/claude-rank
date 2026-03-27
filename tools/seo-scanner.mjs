@@ -5,7 +5,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { parseHtml, findHtmlFiles } from './lib/html-parser.mjs';
+import { parseHtml, findHtmlFiles, detectPageType } from './lib/html-parser.mjs';
 import { checkFileSize } from './lib/security.mjs';
 
 // ---------------------------------------------------------------------------
@@ -97,6 +97,13 @@ const RULES = {
 // Per-file rule checks
 // ---------------------------------------------------------------------------
 
+// Page types where thin content is expected and should not be flagged
+const THIN_CONTENT_EXEMPT = new Set(['contact', 'terms', 'privacy', 'legal', 'login', '404', 'sitemap']);
+// Page types where missing analytics is expected
+const NO_ANALYTICS_EXEMPT = new Set(['terms', 'privacy', 'legal']);
+// Page types where missing OG image is expected
+const NO_OG_IMAGE_EXEMPT = new Set(['terms', 'privacy', 'legal']);
+
 /**
  * Run per-file checks. Returns array of finding objects.
  * @param {object} state — PageState from parseHtml
@@ -107,6 +114,7 @@ const RULES = {
 function checkFile(state, filePath, rootDir, opts = {}) {
   const findings = [];
   const rel = path.relative(rootDir, filePath);
+  const pageType = detectPageType(filePath, state);
 
   function add(rule, message, context = {}) {
     const def = RULES[rule];
@@ -115,6 +123,7 @@ function checkFile(state, filePath, rootDir, opts = {}) {
       severity: def.severity,
       file: rel,
       message,
+      pageType,
       ...context,
     });
   }
@@ -151,7 +160,7 @@ function checkFile(state, filePath, rootDir, opts = {}) {
     add('missing-h1', 'Page has no <h1> heading');
   }
 
-  if (state.wordCount > 0 && state.wordCount < 300) {
+  if (state.wordCount > 0 && state.wordCount < 300 && !THIN_CONTENT_EXEMPT.has(pageType)) {
     add('thin-content', `Page has only ${state.wordCount} words (minimum recommended: 300)`);
   }
 
@@ -196,7 +205,7 @@ function checkFile(state, filePath, rootDir, opts = {}) {
     add('missing-og-description', 'Page is missing og:description Open Graph tag');
   }
 
-  if (!state.hasOgImage) {
+  if (!state.hasOgImage && !NO_OG_IMAGE_EXEMPT.has(pageType)) {
     add('missing-og-image', 'Page is missing og:image Open Graph tag');
   }
 
@@ -238,7 +247,7 @@ function checkFile(state, filePath, rootDir, opts = {}) {
     add('missing-favicon', 'Page is missing a favicon link');
   }
 
-  if (!state.hasAnalytics) {
+  if (!state.hasAnalytics && !NO_ANALYTICS_EXEMPT.has(pageType)) {
     add('no-analytics', 'No analytics provider detected on this page');
   }
 
