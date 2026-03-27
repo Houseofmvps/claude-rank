@@ -127,6 +127,8 @@ export function parseHtml(htmlString) {
   let currentHeadingLevel = 0;
   let isJsonLd = false;
   let currentHeadingText = '';
+  let currentScriptSrc = '';
+  let inlineScriptBuffer = '';
   let bodyTextBuffer = '';
 
   const parser = new Parser(
@@ -252,8 +254,9 @@ export function parseHtml(htmlString) {
           }
 
           // Count total and deferred scripts
+          // type="module" is deferred by default per HTML spec
           state.totalScripts++;
-          if (attribs.async !== undefined || attribs.defer !== undefined) {
+          if (attribs.async !== undefined || attribs.defer !== undefined || scriptType === 'module') {
             state.deferredScripts++;
           }
 
@@ -269,6 +272,7 @@ export function parseHtml(htmlString) {
           }
 
           inScript = true;
+          currentScriptSrc = src;
           return;
         }
 
@@ -349,6 +353,12 @@ export function parseHtml(htmlString) {
           return;
         }
 
+        // Inline script content — accumulate for analytics detection
+        if (inScript && !isJsonLd) {
+          inlineScriptBuffer += text;
+          return;
+        }
+
         // Body text (skip script/style)
         if (inBody && !inScript && !inStyle) {
           bodyTextBuffer += text + ' ';
@@ -372,7 +382,19 @@ export function parseHtml(htmlString) {
             state.jsonLdScripts++;
             isJsonLd = false;
           }
+          // Check inline script content for analytics patterns (catches lazy-loaded GA etc.)
+          if (!state.hasAnalytics && !currentScriptSrc && inlineScriptBuffer) {
+            for (const { pattern, provider } of ANALYTICS_PATTERNS) {
+              if (inlineScriptBuffer.includes(pattern)) {
+                state.hasAnalytics = true;
+                state.analyticsProvider = provider;
+                break;
+              }
+            }
+          }
           inScript = false;
+          currentScriptSrc = '';
+          inlineScriptBuffer = '';
           return;
         }
 
@@ -451,7 +473,9 @@ export async function parseHtmlFile(filePath) {
 // findHtmlFiles — recursively find .html/.htm files
 // ---------------------------------------------------------------------------
 
-const SKIP_DIRS = new Set(['node_modules', '.git', '.next', '.nuxt', '.svelte-kit', '.cache', '.turbo']);
+const SKIP_DIRS = new Set(['node_modules', '.git', '.next', '.nuxt', '.svelte-kit', '.cache', '.turbo', 'public']);
+// Files that look like HTML but aren't real pages (e.g., Google/Bing site verification)
+const SKIP_FILE_PATTERNS = [/^google[a-f0-9]+\.html$/, /^bing[a-f0-9]+\.html$/, /^yandex_[a-f0-9]+\.html$/];
 
 /**
  * Recursively find all .html/.htm files under a directory.
@@ -479,6 +503,8 @@ export function findHtmlFiles(dir) {
       } else if (entry.isFile()) {
         const ext = path.extname(entry.name).toLowerCase();
         if (ext === '.html' || ext === '.htm') {
+          // Skip search engine verification files
+          if (SKIP_FILE_PATTERNS.some(p => p.test(entry.name))) continue;
           results.push(fullPath);
         }
       }

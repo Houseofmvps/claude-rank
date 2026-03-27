@@ -208,7 +208,20 @@ function analyzePage(filePath) {
  * @returns {{ files_scanned, findings, scores: { aeo }, summary }}
  */
 export function scanDirectory(rootDir) {
-  const htmlFiles = findHtmlFiles(rootDir);
+  let htmlFiles = findHtmlFiles(rootDir);
+
+  // If dist/build/out has HTML, exclude root index.html (Vite/webpack source template)
+  const hasBuildDir = htmlFiles.some(f => {
+    const rel = path.relative(rootDir, f);
+    return rel.startsWith('dist' + path.sep) || rel.startsWith('build' + path.sep) || rel.startsWith('out' + path.sep);
+  });
+  if (hasBuildDir) {
+    htmlFiles = htmlFiles.filter(f => {
+      const rel = path.relative(rootDir, f);
+      return rel !== 'index.html' && rel !== 'index.htm';
+    });
+  }
+
   const findings = [];
 
   // Per-file analyses

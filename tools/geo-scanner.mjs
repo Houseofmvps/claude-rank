@@ -155,16 +155,26 @@ function parseRobotsTxt(content) {
  */
 function extractSchemaTypes(jsonLdContent) {
   const types = new Set();
+
+  function walkSchema(obj) {
+    if (!obj || typeof obj !== 'object') return;
+    if (Array.isArray(obj)) {
+      for (const item of obj) walkSchema(item);
+      return;
+    }
+    if (obj['@type']) {
+      const t = Array.isArray(obj['@type']) ? obj['@type'] : [obj['@type']];
+      for (const type of t) types.add(type);
+    }
+    // Walk all nested objects to find embedded schemas (e.g., author: { @type: "Person" })
+    for (const val of Object.values(obj)) {
+      if (val && typeof val === 'object') walkSchema(val);
+    }
+  }
+
   for (const raw of jsonLdContent) {
     try {
-      const parsed = JSON.parse(raw);
-      const items = Array.isArray(parsed) ? parsed : [parsed];
-      for (const item of items) {
-        if (item && item['@type']) {
-          const t = Array.isArray(item['@type']) ? item['@type'] : [item['@type']];
-          for (const type of t) types.add(type);
-        }
-      }
+      walkSchema(JSON.parse(raw));
     } catch {
       // Non-parseable JSON-LD — skip
     }
@@ -189,21 +199,6 @@ function isQuestionHeading(text) {
 // Content analysis helpers
 // ---------------------------------------------------------------------------
 
-/**
- * Count average paragraph word count from body text.
- * Estimates paragraphs by splitting on double newlines.
- * @param {string} bodyText
- * @returns {number} average words per paragraph
- */
-function avgParagraphWords(bodyText) {
-  const paragraphs = bodyText
-    .split(/\n{2,}/)
-    .map(p => p.trim())
-    .filter(p => p.length > 30);
-  if (paragraphs.length === 0) return 0;
-  const total = paragraphs.reduce((sum, p) => sum + p.split(/\s+/).length, 0);
-  return total / paragraphs.length;
-}
 
 // ---------------------------------------------------------------------------
 // readRobotsTxt — look in rootDir and rootDir/public
@@ -322,7 +317,20 @@ export function scanDirectory(rootDir) {
   // 3. Scan HTML files
   // -------------------------------------------------------------------------
 
-  const htmlFiles = findHtmlFiles(rootDir);
+  let htmlFiles = findHtmlFiles(rootDir);
+
+  // If dist/build/out has HTML, exclude root index.html (Vite/webpack source template)
+  const hasBuildDir = htmlFiles.some(f => {
+    const rel = path.relative(rootDir, f);
+    return rel.startsWith('dist' + path.sep) || rel.startsWith('build' + path.sep) || rel.startsWith('out' + path.sep);
+  });
+  if (hasBuildDir) {
+    htmlFiles = htmlFiles.filter(f => {
+      const rel = path.relative(rootDir, f);
+      return rel !== 'index.html' && rel !== 'index.htm';
+    });
+  }
+
   let filesScanned = 0;
 
   // Aggregate data across all pages

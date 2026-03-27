@@ -376,7 +376,7 @@ function crossPageChecks(allStates, rootDir) {
   if (allStates.length > 1) {
     const linkedSet = buildLinkedSet(allStates);
 
-    for (const { filePath, state } of allStates) {
+    for (const { filePath } of allStates) {
       const filename = path.basename(filePath);
       const nameNoExt = filename.replace(/\.html?$/, '');
 
@@ -436,7 +436,19 @@ function calculateScore(findings) {
  */
 export function scanDirectory(rootDir) {
   const absRoot = path.resolve(rootDir);
-  const htmlFiles = findHtmlFiles(absRoot);
+  let htmlFiles = findHtmlFiles(absRoot);
+
+  // If dist/ or build/ has HTML, exclude root index.html (Vite/webpack source template)
+  const hasBuildDir = htmlFiles.some(f => {
+    const rel = path.relative(absRoot, f);
+    return rel.startsWith('dist' + path.sep) || rel.startsWith('build' + path.sep) || rel.startsWith('out' + path.sep);
+  });
+  if (hasBuildDir) {
+    htmlFiles = htmlFiles.filter(f => {
+      const rel = path.relative(absRoot, f);
+      return rel !== 'index.html' && rel !== 'index.htm';
+    });
+  }
 
   // Backend-only detection
   if (isBackendOnlyProject(absRoot, htmlFiles)) {
