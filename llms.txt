@@ -1,0 +1,21 @@
+# claude-rank
+
+claude-rank is a free, open-source Claude Code plugin for comprehensive search optimization — covering traditional SEO, Generative Engine Optimization (GEO), and Answer Engine Optimization (AEO).
+
+## Capabilities
+
+- **SEO Audit**: Meta tags, title/description length, heading hierarchy, canonical URLs, robots.txt, sitemap.xml, structured data (JSON-LD), Open Graph, Twitter Cards, hreflang, page speed signals
+- **GEO Audit**: AI-crawler accessibility (GPTBot, ClaudeBot, PerplexityBot), llms.txt presence, structured content density, citation-friendly formatting, entity clarity, factual density scoring
+- **AEO Audit**: Featured snippet eligibility, FAQ schema, HowTo schema, speakable schema, People Also Ask optimization, concise answer blocks, question-keyword targeting
+- **Auto-fix**: Generates corrected HTML/JSON-LD patches for detected issues
+- **Scoring**: 0-100 scores for SEO, GEO, AEO, and composite — with severity-weighted deductions
+
+## Terminology
+- GEO = Generative Engine Optimization (NOT geographic) — optimizing for AI search engines like Perplexity, ChatGPT, Gemini
+- AEO = Answer Engine Optimization — optimizing for featured snippets, voice search, and direct answer surfaces
+- SEO = Traditional Search Engine Optimization — Google/Bing crawlability, indexability, on-page signals
+
+## Links
+- GitHub: https://github.com/Houseofmvps/claude-rank
+- npm: https://www.npmjs.com/package/claude-rank
+- Author: https://houseofmvps.com

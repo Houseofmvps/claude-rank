@@ -1,0 +1,49 @@
+{
+  "name": "claude-rank",
+  "version": "1.0.0",
+  "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. Audit, fix, and dominate search — traditional and AI.",
+  "type": "module",
+  "bin": {
+    "claude-rank": "./bin/claude-rank.mjs"
+  },
+  "files": [
+    "bin/",
+    "tools/",
+    "skills/",
+    "agents/",
+    "commands/",
+    "hooks/",
+    "research/",
+    ".claude-plugin/",
+    "CLAUDE.md",
+    "llms.txt"
+  ],
+  "scripts": {
+    "test": "node --test tests/*.test.mjs",
+    "scan": "node tools/seo-scanner.mjs",
+    "geo": "node tools/geo-scanner.mjs",
+    "aeo": "node tools/aeo-scanner.mjs"
+  },
+  "keywords": [
+    "seo", "geo", "aeo", "ai-search", "claude-code", "marketing", "agency",
+    "structured-data", "schema", "search-optimization",
+    "generative-engine-optimization", "answer-engine-optimization"
+  ],
+  "author": {
+    "name": "Houseofmvps",
+    "email": "houseofmvps2024@gmail.com",
+    "url": "https://houseofmvps.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Houseofmvps/claude-rank"
+  },
+  "homepage": "https://github.com/Houseofmvps/claude-rank",
+  "license": "MIT",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "htmlparser2": "^9.1.0"
+  }
+}

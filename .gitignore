@@ -1,0 +1,6 @@
+node_modules/
+.env
+.claude-rank/
+coverage/
+*.tgz
+.DS_Store

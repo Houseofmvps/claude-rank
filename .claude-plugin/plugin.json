@@ -1,0 +1,16 @@
+{
+  "name": "claude-rank",
+  "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. Audit, fix, and dominate search.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Houseofmvps",
+    "email": "houseofmvps2024@gmail.com"
+  },
+  "homepage": "https://github.com/Houseofmvps/claude-rank",
+  "repository": "https://github.com/Houseofmvps/claude-rank",
+  "license": "MIT",
+  "keywords": [
+    "seo", "geo", "aeo", "ai-search", "marketing", "agency",
+    "structured-data", "schema", "search-optimization"
+  ]
+}
