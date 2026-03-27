@@ -26,6 +26,58 @@
 
 ---
 
+## See It In Action
+
+```
+$ claude-rank scan ./my-saas-landing
+
+╔════════════════════════════════════════════════╗
+║          claude-rank SEO Audit                 ║
+╠════════════════════════════════════════════════╣
+║  Score:  65/100  ██████████░░░░░  NEEDS WORK   ║
+╠════════════════════════════════════════════════╣
+║  Files scanned: 26                             ║
+║  Findings: 41                                  ║
+║    Critical: 0  High: 1  Medium: 40  Low: 0    ║
+╚════════════════════════════════════════════════╝
+
+Findings:
+  HIGH     thin-content
+           Page has only 190 words (minimum recommended: 300)
+           Files: dist/contact/index.html
+
+  MEDIUM   title-too-long (18 pages)
+           Title is 63 chars (max recommended: 60)
+           Files: dist/about/index.html, dist/blog/..., +15 more
+
+  MEDIUM   missing-main-landmark (9 pages)
+           Page is missing a <main> landmark element
+```
+
+```
+$ claude-rank geo ./my-saas-landing
+
+╔════════════════════════════════════════════════╗
+║          claude-rank GEO Audit                 ║
+╠════════════════════════════════════════════════╣
+║  Score:  95/100  ██████████████░  EXCELLENT     ║
+╚════════════════════════════════════════════════╝
+```
+
+```
+$ claude-rank scan https://houseofmvps.com    # Scan any live URL
+
+╔════════════════════════════════════════════════╗
+║          claude-rank SEO Audit                 ║
+╠════════════════════════════════════════════════╣
+║  Score:  83/100  ████████████░░░  GOOD          ║
+╚════════════════════════════════════════════════╝
+```
+
+*Real output from scanning [savemrr.co](https://savemrr.co) (26-page SaaS landing) and [houseofmvps.com](https://houseofmvps.com).*
+
+---
+
 ## Quick Start
 
 ### Install as a Claude Code plugin (recommended)
@@ -39,10 +91,12 @@ That's it. Restart Claude Code and all 6 skills + 4 agents are active.
 ### Or use standalone — no plugin install needed
 
 ```bash
-npx @houseofmvps/claude-rank scan ./my-project
-npx @houseofmvps/claude-rank geo ./my-project
-npx @houseofmvps/claude-rank aeo ./my-project
-npx @houseofmvps/claude-rank schema ./my-project
+npx @houseofmvps/claude-rank scan ./my-project          # Local directory
+npx @houseofmvps/claude-rank scan https://example.com    # Live URL
+npx @houseofmvps/claude-rank geo ./my-project            # AI search audit
+npx @houseofmvps/claude-rank aeo ./my-project            # Answer engine audit
+npx @houseofmvps/claude-rank schema ./my-project         # Structured data
+npx @houseofmvps/claude-rank scan ./site --json          # Raw JSON output
 ```
 
 ### Or install globally
