@@ -1,6 +1,6 @@
 <div align="center">
 
-# claude-rank
+<img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
 
 ### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 74+ rules. Auto-fix everything. Dominate search — traditional and AI.
 
