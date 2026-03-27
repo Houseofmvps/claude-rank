@@ -4,7 +4,26 @@
 
 const args = process.argv.slice(2);
 const jsonFlag = args.includes('--json');
-const positional = args.filter(a => a !== '--json');
+const singleFlag = args.includes('--single');
+const reportFlag = args.includes('--report') ? args[args.indexOf('--report') + 1] : null;
+const thresholdIdx = args.indexOf('--threshold');
+const thresholdFlag = thresholdIdx !== -1 ? Number(args[thresholdIdx + 1]) : null;
+
+// Parse --pages N flag (default: 50)
+let maxPages = 50;
+const pagesIdx = args.indexOf('--pages');
+if (pagesIdx !== -1 && args[pagesIdx + 1]) {
+  const parsed = parseInt(args[pagesIdx + 1], 10);
+  if (!isNaN(parsed) && parsed > 0) maxPages = parsed;
+}
+
+const positional = args.filter((a, i) => {
+  if (a === '--json' || a === '--single') return false;
+  if (a === '--report' || a === '--threshold' || a === '--pages') return false;
+  // Skip the value after --report, --threshold, or --pages
+  if (i > 0 && (args[i - 1] === '--report' || args[i - 1] === '--threshold' || args[i - 1] === '--pages')) return false;
+  return true;
+});
 const [command = 'scan', dir = '.'] = positional;
 
 const commands = {
@@ -17,7 +36,7 @@ const commands = {
 if (command === 'help' || command === '--help') {
   console.log(`claude-rank — SEO/GEO/AEO toolkit
 
-Usage: claude-rank <command> [directory|url] [--json]
+Usage: claude-rank <command> [directory|url] [flags]
 
 Commands:
   scan     Run core SEO scanner (default)
@@ -27,17 +46,28 @@ Commands:
   help     Show this help message
 
 Flags:
-  --json   Output raw JSON (for programmatic use)
+  --json            Output raw JSON (for programmatic use)
+  --single          Scan only one page (skip multi-page crawl for URLs)
+  --pages N         Max pages to crawl (default: 50, URL scanning only)
+  --report html     Run all scanners and save HTML report to claude-rank-report.html
+  --threshold N     Exit code 1 if score < N (for CI/CD pipelines)
 
 URL scanning:
-  Pass a URL instead of a directory to scan a live page via HTTP.
+  Pass a URL instead of a directory to scan a live site via HTTP.
+  By default, crawls up to 50 pages following internal links.
+  Use --single to scan only the given URL without crawling.
   Only the "scan" command supports URL scanning.
 
 Examples:
   claude-rank scan ./my-project
   claude-rank scan https://savemrr.co
+  claude-rank scan https://savemrr.co --pages 10
+  claude-rank scan https://savemrr.co --single
   npx @houseofmvps/claude-rank geo .
   claude-rank scan ./site --json
+  claude-rank scan ./site --report html
+  claude-rank scan ./site --threshold 80
+  claude-rank scan . --report html --threshold 80
 `);
   process.exit(0);
 }
@@ -79,9 +109,11 @@ if (isUrl) {
     process.exit(1);
   }
 
-  const { scanUrl } = await import(new URL('../tools/url-scanner.mjs', import.meta.url));
+  const { scanUrl, scanSite } = await import(new URL('../tools/url-scanner.mjs', import.meta.url));
   try {
-    const result = await scanUrl(dir);
+    const result = singleFlag
+      ? await scanUrl(dir)
+      : await scanSite(dir, { maxPages });
     if (jsonFlag) {
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -93,12 +125,47 @@ if (isUrl) {
   }
 } else {
   // Directory-based scanning
-  const mod = await import(new URL(toolPath, import.meta.url));
   const targetDir = resolve(dir);
 
-  if (command === 'schema') {
+  // --report html: run ALL scanners, generate HTML report
+  if (reportFlag === 'html') {
+    const { writeFileSync } = await import('node:fs');
+    const { generateHtmlReport } = await import(new URL('../tools/lib/report-generator.mjs', import.meta.url));
+
+    const seoMod = await import(new URL('../tools/seo-scanner.mjs', import.meta.url));
+    const geoMod = await import(new URL('../tools/geo-scanner.mjs', import.meta.url));
+    const aeoMod = await import(new URL('../tools/aeo-scanner.mjs', import.meta.url));
+
+    const seo = seoMod.scanDirectory(targetDir);
+    const geo = geoMod.scanDirectory(targetDir);
+    const aeo = aeoMod.scanDirectory(targetDir);
+
+    const html = generateHtmlReport({
+      seo, geo, aeo,
+      target: dir,
+      timestamp: new Date().toISOString(),
+    });
+
+    const outPath = resolve('claude-rank-report.html');
+    writeFileSync(outPath, html, 'utf-8');
+    console.log(`HTML report saved to ${outPath}`);
+
+    // Also print terminal summaries
+    console.log(formatSeoReport(seo));
+    console.log(formatGeoReport(geo));
+    console.log(formatAeoReport(aeo));
+
+    // Check threshold against the primary (SEO) score
+    if (thresholdFlag != null) {
+      const score = seo.scores?.seo ?? 0;
+      if (score < thresholdFlag) {
+        console.error(`Score ${score} is below threshold ${thresholdFlag}`);
+        process.exit(1);
+      }
+    }
+  } else if (command === 'schema') {
     // schema-engine exports detectSchema (per-file) and findHtmlFiles via html-parser.
-    // Build a directory-level result by importing the html-parser helper and scanning each file.
+    const mod = await import(new URL(toolPath, import.meta.url));
     const { findHtmlFiles } = await import(new URL('../tools/lib/html-parser.mjs', import.meta.url));
     const { readFileSync } = await import('node:fs');
     const files = findHtmlFiles(targetDir);
@@ -116,11 +183,22 @@ if (isUrl) {
       console.log(formatSchemaReport(results));
     }
   } else {
+    const mod = await import(new URL(toolPath, import.meta.url));
     const result = mod.scanDirectory(targetDir);
     if (jsonFlag) {
       console.log(JSON.stringify(result, null, 2));
     } else {
       console.log(formatters[command](result));
+    }
+
+    // Check threshold
+    if (thresholdFlag != null) {
+      const scoreKey = command === 'scan' ? 'seo' : command;
+      const score = result.scores?.[scoreKey] ?? 0;
+      if (score < thresholdFlag) {
+        console.error(`Score ${score} is below threshold ${thresholdFlag}`);
+        process.exit(1);
+      }
     }
   }
 }
