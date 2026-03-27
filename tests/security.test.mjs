@@ -36,6 +36,28 @@ describe('validateUrl', () => {
   });
 });
 
+describe('checkFileSize', () => {
+  it('rejects files over 10MB', () => {
+    const mockStat = () => ({ size: 11 * 1024 * 1024 });
+    const result = checkFileSize('/fake/path', mockStat);
+    assert.equal(result.ok, false);
+    assert.ok(result.reason.includes('too large') || result.reason.includes('limit'));
+  });
+
+  it('accepts files under 10MB', () => {
+    const mockStat = () => ({ size: 1024 });
+    const result = checkFileSize('/fake/path', mockStat);
+    assert.equal(result.ok, true);
+    assert.equal(result.size, 1024);
+  });
+
+  it('handles missing files', () => {
+    const mockStat = () => { throw new Error('ENOENT'); };
+    const result = checkFileSize('/fake/path', mockStat);
+    assert.equal(result.ok, false);
+  });
+});
+
 describe('createResponseAccumulator', () => {
   it('accumulates data within limit', () => {
     const acc = createResponseAccumulator(20);
