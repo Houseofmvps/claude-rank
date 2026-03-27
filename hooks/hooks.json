@@ -1,0 +1,10 @@
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "command": "node ${CLAUDE_PLUGIN_ROOT}/tools/schema-engine.mjs validate-file \"$CLAUDE_FILE_PATH\""
+      }
+    ]
+  }
+}
