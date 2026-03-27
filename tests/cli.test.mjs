@@ -25,4 +25,19 @@ describe('CLI', () => {
       execFileSync('node', [BIN, 'nonexistent', '.'], { encoding: 'utf8' });
     });
   });
+
+  it('--threshold passes when score is above threshold', () => {
+    // good-seo-dir should score well above 0
+    const out = execFileSync('node', [BIN, 'scan', FIXTURES, '--threshold', '0'], { encoding: 'utf8' });
+    assert.ok(out.length > 0);
+  });
+
+  it('--threshold 100 exits with code 1 since nothing scores 100', () => {
+    assert.throws(() => {
+      execFileSync('node', [BIN, 'scan', FIXTURES, '--threshold', '100'], { encoding: 'utf8' });
+    }, (err) => {
+      assert.ok(err.status === 1);
+      return true;
+    });
+  });
 });
