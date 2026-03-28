@@ -2,7 +2,7 @@
 
 <img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
 
-### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 85+ rules. Competitive X-Ray. Auto-fix everything. Dominate search — traditional and AI.
+### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 150+ rules. Competitive X-Ray. Auto-fix everything. Dominate search — traditional and AI.
 
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
 [![npm downloads](https://img.shields.io/npm/dm/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=blue&label=Monthly%20Downloads)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -188,13 +188,16 @@ That's not an SEO problem. That's a visibility problem across every search surfa
 /claude-rank:rank-audit
 ```
 
-One command. Three scanners run in parallel — SEO, GEO, and AEO. 85+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
+One command. Eight scanners run in parallel — SEO, GEO, AEO, AI Citability, Content Intelligence, Performance, Vertical SEO, and Security. 150+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
 
 ```
-SEO Score:   87/100  ████████████░░  (39 rules)
-GEO Score:   92/100  █████████████░  (34 rules)
-AEO Score:   78/100  ██████████░░░░  (12 rules)
-Overall:     86/100  READY TO RANK
+SEO Score:         87/100  ████████████░░  (49 rules)
+GEO Score:         92/100  █████████████░  (40 rules)
+AEO Score:         78/100  ██████████░░░░  (12 rules)
+Citability Score:  65/100  ████████░░░░░░  (7 dimensions)
+Performance:       90/100  █████████████░  (13 rules)
+Security:          80/100  ███████████░░░  (15 rules)
+Overall:           86/100  READY TO RANK
 ```
 
 **Score below 80?** Run `/claude-rank:rank-fix` and it auto-generates what's missing — robots.txt, sitemap.xml, llms.txt, JSON-LD schema — then re-scans to show your improvement.
@@ -203,29 +206,30 @@ Overall:     86/100  READY TO RANK
 
 ## What It Does
 
-### SEO Scanner — 39 Rules
+### SEO Scanner — 49 Rules
 
 Traditional search optimization. The foundation.
 
 | Category | What it checks |
 |---|---|
 | **Meta** | Title (length, uniqueness), meta description, viewport, charset, canonical URL, lang attribute |
-| **Content** | H1 presence, heading hierarchy, word count, image alt text, thin content detection |
-| **Technical** | robots.txt, sitemap.xml, HTTPS, mobile-friendly viewport, analytics detection, redirect chain detection |
-| **Structured Data** | JSON-LD presence, schema validation against Google's required fields (14 schema types) |
-| **Cross-Page** | Duplicate titles across pages, duplicate descriptions, canonical conflicts, orphan pages |
+| **Content** | H1 presence, heading hierarchy, word count, image alt text, thin content, readability (Flesch-Kincaid), passive voice, wall-of-text paragraphs |
+| **Technical** | robots.txt, sitemap.xml, HTTPS, mixed content, mobile-friendly viewport, analytics detection (30+ providers), redirect chain detection, lazy loading, hreflang validation |
+| **Structured Data** | JSON-LD presence, schema validation against Google's required fields (14 schema types), dateModified freshness |
+| **Cross-Page** | Duplicate titles, duplicate descriptions, duplicate content (Jaccard similarity >80%), canonical conflicts, orphan pages |
+| **Keyword Relevance** | Title-content keyword alignment, meta description-content alignment |
 
-### GEO Scanner — 34 Rules
+### GEO Scanner — 40 Rules
 
 Generative Engine Optimization. For AI search engines: ChatGPT, Perplexity, Gemini, Google AI Overviews.
 
 | Category | What it checks |
 |---|---|
-| **AI Crawlers** | robots.txt rules for 9 bots (GPTBot, PerplexityBot, ClaudeBot, Claude-Web, Google-Extended, CCBot, anthropic-ai, Googlebot, Bingbot) |
+| **AI Crawlers** | robots.txt rules for 11 bots (GPTBot, PerplexityBot, ClaudeBot, Claude-Web, Google-Extended, CCBot, AppleBot, Bytespider, Meta-ExternalAgent, Amazonbot, anthropic-ai) |
 | **AI Discoverability** | llms.txt presence, sitemap.xml, structured data quality |
-| **Content Structure** | Question-format H2s, definition patterns, statistics, data tables, lists |
-| **Citation Readiness** | Passage length (134-167 word sweet spot), direct answers in first 40-60 words |
-| **Authority Signals** | Author attribution, organization schema, source citations |
+| **Content Structure** | Question-format H2s (with marketing header filtering), definition patterns, statistics, data tables, lists |
+| **Citation Readiness** | Passage length (134-167 word sweet spot), direct answers in first 40-60 words, source citations to .edu/.gov/.org |
+| **Authority Signals** | Author attribution, organization schema, dateModified freshness, content freshness |
 
 ### AEO Scanner — 12 Rules
 
@@ -237,6 +241,67 @@ Answer Engine Optimization. Featured snippets, People Also Ask, voice search.
 | **Snippet Fitness** | Answer paragraph length (40-60 words optimal), numbered steps, definition patterns |
 | **Voice Search** | Concise answers under 29 words (Google voice search average), conversational phrasing |
 | **Rich Results** | Featured image, breadcrumb markup, review schema |
+
+### AI Citability Score — 7 Dimensions (NEW)
+
+Proprietary scoring algorithm based on GEO research. Scores how likely AI engines are to cite each page (0-100).
+
+| Dimension | Weight | What it measures |
+|---|---|---|
+| **Statistic Density** | 0-15 | Data points per 200 words (+33.9% visibility boost) |
+| **Front-loading** | 0-15 | Key answer in first 30% of content (44.2% of citations come from there) |
+| **Source Citations** | 0-15 | Links to .edu/.gov/research domains (+30.3% visibility) |
+| **Expert Attribution** | 0-15 | Person schema, author bios, expert quotes (+32% boost) |
+| **Definition Clarity** | 0-10 | "X is..." / "X refers to..." extraction patterns |
+| **Schema Completeness** | 0-15 | Organization + Author + Article + FAQ + Breadcrumb coverage |
+| **Content Structure** | 0-15 | Heading hierarchy, lists, paragraph segmentation |
+
+### Content Intelligence (NEW)
+
+Deep content quality analysis across all pages.
+
+| Category | What it analyzes |
+|---|---|
+| **Readability** | Flesch-Kincaid score, Gunning Fog index, per-page scoring |
+| **Passive Voice** | Percentage of passive sentences per page |
+| **Duplicate Detection** | Jaccard similarity fingerprinting across all page pairs |
+| **Thin Content** | Pages under 300 words flagged |
+| **Wall of Text** | Paragraphs over 150 words identified |
+| **Internal Linking** | Suggestions for pages sharing H2 topics that should cross-link |
+
+### Performance Risk Assessment — 13 Rules (NEW)
+
+Performance risk detection from static HTML — no Chrome or Lighthouse needed.
+
+| Category | What it checks |
+|---|---|
+| **CLS Risk** | Images without width/height dimensions |
+| **Render Blocking** | Scripts without async/defer, excessive blocking scripts |
+| **Payload** | Large inline CSS (>50KB), large inline JS (>50KB), too many external domains |
+| **Loading** | Missing lazy loading, missing fetchpriority for LCP image |
+| **Fonts** | Web fonts without font-display: swap (FOIT/FOUT risk) |
+| **Resource Hints** | Missing preload/prefetch, missing preconnect |
+| **Security** | Mixed content (HTTP resources on HTTPS pages) |
+
+### Vertical SEO — 20 Rules (NEW)
+
+Auto-detects e-commerce and local business sites, then runs specialized checks.
+
+| Type | Rules | What it checks |
+|---|---|---|
+| **E-Commerce** | 10 | Product schema, Offer schema, AggregateRating, reviews, product images, descriptions, breadcrumbs, pricing, availability, duplicate descriptions |
+| **Local Business** | 10 | LocalBusiness schema, NAP data, geo coordinates, opening hours, Google Maps, clickable phone, local keywords, address element, service area pages, review schema |
+
+### Security & Headers — 15 Rules (NEW)
+
+Security compliance that directly affects SEO rankings (Google confirmed HTTPS as a ranking signal).
+
+| Category | What it checks |
+|---|---|
+| **HTTPS** | HTTP-only canonical/og:url, mixed content (scripts vs resources), upgrade-insecure-requests |
+| **Headers** | CSP, X-Content-Type-Options, X-Frame-Options, Referrer-Policy, Permissions-Policy (via meta tags) |
+| **Integrity** | Subresource Integrity (SRI) on external scripts |
+| **Safety** | Inline event handlers, form actions over HTTP, password autocomplete, target="_blank" noopener, iframe sandbox |
 
 ### Competitive X-Ray — NEW in v1.7
 
@@ -380,10 +445,15 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 
 | Command | Description |
 |---------|-------------|
-| `claude-rank scan ./project` | Full SEO scan (39 rules) |
+| `claude-rank scan ./project` | Full SEO scan (49 rules) |
 | `claude-rank scan https://example.com` | Crawl and scan a live site (up to 50 pages) |
-| `claude-rank geo ./project` | GEO scan — AI search optimization (34 rules) |
+| `claude-rank geo ./project` | GEO scan — AI search optimization (40 rules) |
 | `claude-rank aeo ./project` | AEO scan — answer engine optimization (12 rules) |
+| `claude-rank citability ./project` | AI Citability Score — 7-dimension analysis |
+| `claude-rank content ./project` | Content intelligence — readability, duplicates, linking |
+| `claude-rank perf ./project` | Performance risk assessment (13 rules, no Chrome needed) |
+| `claude-rank vertical ./project` | Vertical SEO — e-commerce + local business (20 rules) |
+| `claude-rank security ./project` | Security headers audit (15 rules) |
 | `claude-rank compete https://competitor.com .` | Competitive X-Ray — side-by-side comparison |
 | `claude-rank cwv https://example.com` | Core Web Vitals via Lighthouse (optional) |
 | `claude-rank schema ./project` | Detect and validate structured data |
@@ -403,6 +473,11 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | `/claude-rank:rank-fix` | Auto-fix all findings in one command |
 | `/claude-rank:rank-schema` | Detect, validate, generate, inject JSON-LD |
 | `/claude-rank:rank-compete` | Competitive X-Ray — compare vs any competitor URL |
+| `/claude-rank:rank-citability` | AI Citability Score — 7-dimension analysis |
+| `/claude-rank:rank-content` | Content intelligence analysis |
+| `/claude-rank:rank-perf` | Performance risk assessment |
+| `/claude-rank:rank-vertical` | E-Commerce / Local Business SEO |
+| `/claude-rank:rank-security` | Security headers audit |
 
 ---
 
@@ -410,8 +485,8 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 
 | Feature | claude-rank | claude-seo |
 |---------|:-----------:|:----------:|
-| SEO rules | 39 | ~20 |
-| GEO — AI search (Perplexity, ChatGPT, Gemini) | 34 rules | Basic |
+| SEO rules | 49 | ~20 |
+| GEO — AI search (Perplexity, ChatGPT, Gemini) | 40 rules | Basic |
 | AEO — featured snippets, voice search | 12 rules | None |
 | Core Web Vitals / Lighthouse | Yes (optional) | No |
 | Redirect chain detection | Yes | No |
@@ -424,9 +499,14 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | Multi-page URL crawling (up to 50 pages) | Yes | No |
 | HTML report export (agency-ready) | Yes | No |
 | CI/CD threshold mode | Yes | No |
+| AI Citability Score (7-dimension) | Yes | No |
+| Content Intelligence (readability, duplicates) | Yes | No |
+| Performance Risk Assessment | Yes (no Chrome needed) | No |
+| Vertical SEO (e-commerce + local) | Yes — auto-detection | No |
+| Security Headers Audit | Yes | No |
 | Competitive analysis (X-Ray) | Yes — side-by-side comparison | No |
 | Tech stack detection (50+ patterns) | Yes | No |
-| AI bot detection | 9 bots | Basic |
+| AI bot detection | 11 bots | Basic |
 | llms.txt generation | Yes | No |
 | robots.txt generation | Yes | No |
 | sitemap.xml generation | Yes | No |
@@ -452,7 +532,7 @@ Two terms that matter and are often confused:
 | **SSRF protection** | All HTTP tools block private IPs, cloud metadata, non-HTTP schemes |
 | **No telemetry** | Zero data collection. No phone-home. Ever. |
 | **1 dependency** | `htmlparser2` only (30KB). No native bindings. No `node-gyp`. |
-| **265 tests** | Security module, all scanners, competitive X-Ray, CLI, integration tests |
+| **332 tests** | Security module, all scanners, competitive X-Ray, CLI, integration tests |
 | **File safety** | 10MB read cap. 5MB response cap. Restrictive write permissions. |
 
 See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
@@ -463,10 +543,10 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 | Category | Count | Highlights |
 |---|---|---|
-| **Tools** | 10 | SEO scanner (39 rules), GEO scanner (34 rules), AEO scanner (12 rules), Competitive X-Ray (50+ tech patterns), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
+| **Tools** | 15 | SEO scanner (49 rules), GEO scanner (40 rules), AEO scanner (12 rules), AI Citability scorer (7 dimensions), Content analyzer, Performance scanner (13 rules), Vertical scanner (20 rules), Security scanner (15 rules), Competitive X-Ray (50+ tech patterns), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
 | **Skills** | 7 | /claude-rank:rank, /claude-rank:rank-audit, /claude-rank:rank-geo, /claude-rank:rank-aeo, /claude-rank:rank-fix, /claude-rank:rank-schema, /claude-rank:rank-compete |
 | **Agents** | 4 | SEO auditor (project-type-aware), GEO auditor (AI readiness levels), AEO auditor (snippet opportunities), Schema auditor (Google validation) |
-| **Commands** | 7 | All slash commands above |
+| **Commands** | 12 | All slash commands above |
 | **Research** | 3 | SEO benchmarks, GEO research, schema catalog |
 
 ---
@@ -509,7 +589,7 @@ Found a bug? Want a new scanner rule? [Open an issue](https://github.com/Houseof
 git clone https://github.com/Houseofmvps/claude-rank.git
 cd claude-rank
 npm install
-npm test              # 265 tests, node:test
+npm test              # 332 tests, node:test
 node tools/<tool>.mjs # No build step
 ```
 

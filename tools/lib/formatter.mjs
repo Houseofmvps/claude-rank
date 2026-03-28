@@ -158,6 +158,27 @@ const FIX_HINTS = {
   'no-direct-answer':          'Start with a direct answer in the first 40-60 words',
   'no-statistics':             'Add statistics and data points to support claims',
 
+  // Performance
+  'images-no-dimensions':        'Add width/height to <img> tags to prevent CLS (layout shift)',
+  'no-font-display-swap':        'Add font-display: swap to @font-face or Google Fonts URL (&display=swap)',
+  'excessive-blocking-scripts':  'Add async or defer to <script> tags — only keep critical scripts blocking',
+  'large-inline-css':            'Extract large inline <style> blocks to external CSS files for caching',
+  'large-inline-js':             'Extract large inline <script> blocks to external JS files with async/defer',
+  'no-resource-hints':           'Add <link rel="preload"> for critical assets (LCP image, key fonts)',
+  'no-lazy-loading':             'Add loading="lazy" to below-the-fold images',
+  'no-fetchpriority':            'Add fetchpriority="high" to the LCP image for faster rendering',
+  'mixed-content-risk':          'Change http:// resources to https:// — mixed content is blocked by browsers',
+
+  // Security
+  'http-only-links':             'Change http:// links to https:// — HTTP links leak referrer data',
+  'mixed-content-scripts':       'Load all scripts over HTTPS — mixed content scripts are blocked',
+  'no-csp-meta':                 'Add <meta http-equiv="Content-Security-Policy" content="...">',
+  'no-referrer-policy':          'Add <meta name="referrer" content="strict-origin-when-cross-origin">',
+  'external-scripts-no-integrity':'Add integrity="sha384-..." and crossorigin to external scripts (SRI)',
+  'inline-event-handlers':       'Replace inline onclick/onload with addEventListener in external JS',
+  'external-links-no-noopener':  'Add rel="noopener noreferrer" to external links with target="_blank"',
+  'iframe-no-sandbox':           'Add sandbox attribute to <iframe> tags for security isolation',
+
   // AEO
   'missing-faq-schema':        'Add FAQPage JSON-LD for People Also Ask',
   'missing-howto-schema':      'Add HowTo JSON-LD for step-by-step content',
@@ -456,6 +477,634 @@ export function formatCompeteReport(result) {
 }
 
 // ---------------------------------------------------------------------------
+// Citability report
+// ---------------------------------------------------------------------------
+
+export function formatCitabilityReport(result) {
+  if (result.skipped) {
+    return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
+  }
+
+  const score = result.scores.citability;
+  const { findings } = result;
+  const filesScanned = result.files_scanned ?? 1;
+  const groups = groupFindings(findings);
+  groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+
+  const grade = gradeFor(score);
+  const lines = [];
+
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('AI Citability Score')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+  lines.push(`  ${grade.color(` ${score} `)}  ${scoreBar(score)}  ${scoreLabel(score)}`);
+  lines.push('');
+  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}`);
+
+  if (result.avgBreakdown) {
+    const bd = result.avgBreakdown;
+    const dims = [
+      ['Statistic Density', bd.statisticDensity],
+      ['Front-Loading', bd.frontLoading],
+      ['Source Citations', bd.sourceCitations],
+      ['Expert Attribution', bd.expertAttribution],
+      ['Definition Clarity', bd.definitionClarity],
+      ['Schema Completeness', bd.schemaCompleteness],
+      ['Content Structure', bd.contentStructure],
+    ];
+
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('7-Dimension Breakdown')}`);
+    lines.push('');
+
+    for (const [name, val] of dims) {
+      if (val == null) continue;
+      const rounded = Math.round(val);
+      lines.push(`  ${pad(name, 24)} ${scoreBar(rounded)}  ${rounded}/100`);
+    }
+  }
+
+  if (result.pages && result.pages.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Per-Page Scores')}`);
+    lines.push('');
+    for (const p of result.pages.slice(0, 10)) {
+      const file = p.file || p.url || 'unknown';
+      const pScore = p.citability ?? p.score ?? 0;
+      lines.push(`  ${scoreBar(pScore)}  ${pad(String(pScore), 4)} ${c.dim(file)}`);
+    }
+    if (result.pages.length > 10) {
+      lines.push(`  ${c.dim(`  ... +${result.pages.length - 10} more pages`)}`);
+    }
+  }
+
+  const critical = groups.filter(g => g.severity === 'critical' || g.severity === 'high');
+  const medium = groups.filter(g => g.severity === 'medium');
+  const low = groups.filter(g => g.severity === 'low');
+
+  if (critical.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
+    lines.push('');
+    for (const g of critical) {
+      const badge = severityBadge(g.severity);
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`              ${g.message}`);
+      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (medium.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
+    lines.push('');
+    for (const g of medium) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`     ${g.message}`);
+      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (low.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
+    lines.push('');
+    for (const g of low) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
+      lines.push(`     ${c.dim(g.message)}`);
+      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
+      lines.push('');
+    }
+  }
+
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Next Steps')}`);
+  lines.push('');
+  if (critical.length > 0) {
+    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} issues first`);
+  }
+  if (medium.length > 0) {
+    const step = critical.length > 0 ? '2.' : '1.';
+    lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues to improve citability`);
+  }
+  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank content .')} to analyze content quality`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Content analysis report
+// ---------------------------------------------------------------------------
+
+export function formatContentReport(result) {
+  if (result.skipped) {
+    return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
+  }
+
+  const { findings } = result;
+  const filesScanned = result.files_scanned ?? 1;
+  const groups = groupFindings(findings);
+  groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+
+  const lines = [];
+
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Content Analysis')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}`);
+
+  if (result.avgReadability != null) {
+    lines.push('');
+    lines.push(`  ${c.bold('Average Readability')}`);
+    if (result.avgReadability.fleschKincaid != null) {
+      lines.push(`  ${c.dim('Flesch-Kincaid Grade:')} ${result.avgReadability.fleschKincaid}`);
+    }
+    if (result.avgReadability.gunningFog != null) {
+      lines.push(`  ${c.dim('Gunning Fog Index:')}   ${result.avgReadability.gunningFog}`);
+    }
+  }
+
+  if (result.pages && result.pages.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Per-Page Readability')}`);
+    lines.push('');
+    lines.push(`  ${pad(c.bold('File'), 36)} ${pad(c.bold('FK'), 6)} ${c.bold('Fog')}`);
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    for (const p of result.pages.slice(0, 10)) {
+      const file = p.file || p.url || 'unknown';
+      const fk = p.fleschKincaid != null ? String(p.fleschKincaid) : '-';
+      const fog = p.gunningFog != null ? String(p.gunningFog) : '-';
+      lines.push(`  ${pad(c.dim(file), 36)} ${pad(fk, 6)} ${fog}`);
+    }
+    if (result.pages.length > 10) {
+      lines.push(`  ${c.dim(`  ... +${result.pages.length - 10} more pages`)}`);
+    }
+  }
+
+  if (result.duplicates && result.duplicates.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.yellow('Duplicate Content'))} ${c.dim(`(${result.duplicates.length} pairs)`)}`);
+    lines.push('');
+    for (const dup of result.duplicates.slice(0, 5)) {
+      const similarity = dup.similarity != null ? ` ${c.yellow(`${Math.round(dup.similarity * 100)}%`)}` : '';
+      lines.push(`  ${c.yellow('\u25CB')} ${c.dim(dup.fileA || dup.a)} ${c.dim('\u2194')} ${c.dim(dup.fileB || dup.b)}${similarity}`);
+    }
+    if (result.duplicates.length > 5) {
+      lines.push(`  ${c.dim(`  ... +${result.duplicates.length - 5} more pairs`)}`);
+    }
+  }
+
+  if (result.linkSuggestions && result.linkSuggestions.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Internal Linking Suggestions')} ${c.dim(`(${result.linkSuggestions.length})`)}`);
+    lines.push('');
+    for (const sug of result.linkSuggestions.slice(0, 5)) {
+      lines.push(`  ${c.cyan('\u2192')} ${c.dim(sug.from || sug.source)} ${c.dim('\u2192')} ${c.cyan(sug.to || sug.target)} ${c.dim(sug.reason || '')}`);
+    }
+    if (result.linkSuggestions.length > 5) {
+      lines.push(`  ${c.dim(`  ... +${result.linkSuggestions.length - 5} more suggestions`)}`);
+    }
+  }
+
+  const critical = groups.filter(g => g.severity === 'critical' || g.severity === 'high');
+  const medium = groups.filter(g => g.severity === 'medium');
+  const low = groups.filter(g => g.severity === 'low');
+
+  if (critical.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
+    lines.push('');
+    for (const g of critical) {
+      const badge = severityBadge(g.severity);
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`              ${g.message}`);
+      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (medium.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
+    lines.push('');
+    for (const g of medium) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`     ${g.message}`);
+      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (low.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
+    lines.push('');
+    for (const g of low) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
+      lines.push(`     ${c.dim(g.message)}`);
+      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
+      lines.push('');
+    }
+  }
+
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Next Steps')}`);
+  lines.push('');
+  if (critical.length > 0) {
+    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} content issues first`);
+  }
+  if (result.duplicates && result.duplicates.length > 0) {
+    lines.push(`  ${c.yellow('\u2192')} Deduplicate or canonicalize ${c.bold(`${result.duplicates.length}`)} similar page pairs`);
+  }
+  if (result.linkSuggestions && result.linkSuggestions.length > 0) {
+    lines.push(`  ${c.cyan('\u2192')} Add ${c.bold(`${result.linkSuggestions.length}`)} internal links to improve crawlability`);
+  }
+  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank citability .')} to check AI citation readiness`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Performance report
+// ---------------------------------------------------------------------------
+
+export function formatPerfReport(result) {
+  if (result.skipped) {
+    return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
+  }
+
+  const score = result.scores.performance;
+  const { findings, summary } = result;
+  const filesScanned = result.files_scanned ?? 1;
+  const groups = groupFindings(findings);
+  groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+
+  const grade = gradeFor(score);
+  const lines = [];
+
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Performance Audit')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+  lines.push(`  ${grade.color(` ${score} `)}  ${scoreBar(score)}  ${scoreLabel(score)}`);
+  lines.push('');
+  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}    ${summary.critical > 0 ? c.red(`Critical: ${summary.critical}`) : c.dim(`Critical: ${summary.critical}`)}  ${summary.high > 0 ? c.red(`High: ${summary.high}`) : c.dim(`High: ${summary.high}`)}  ${summary.medium > 0 ? c.yellow(`Medium: ${summary.medium}`) : c.dim(`Medium: ${summary.medium}`)}  ${c.dim(`Low: ${summary.low}`)}`);
+
+  if (result.metrics) {
+    const m = result.metrics;
+    const metricRows = [
+      ['Total Images', m.totalImages],
+      ['Inline CSS (KB)', m.inlineCssKB],
+      ['Inline JS (KB)', m.inlineJsKB],
+      ['Blocking Scripts', m.blockingScripts],
+      ['Images w/o Dimensions', m.imagesWithoutDimensions],
+      ['Images w/o Lazy Load', m.imagesWithoutLazyLoad],
+      ['Unminified CSS Files', m.unminifiedCss],
+      ['Unminified JS Files', m.unminifiedJs],
+    ].filter(([, v]) => v != null);
+
+    if (metricRows.length > 0) {
+      lines.push('');
+      lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+      lines.push(`  ${c.bold('Metrics')}`);
+      lines.push('');
+      for (const [label, value] of metricRows) {
+        const valStr = typeof value === 'number' ? String(Math.round(value * 100) / 100) : String(value);
+        lines.push(`  ${pad(c.dim(label), 28)} ${valStr}`);
+      }
+    }
+  }
+
+  const critical = groups.filter(g => g.severity === 'critical' || g.severity === 'high');
+  const medium = groups.filter(g => g.severity === 'medium');
+  const low = groups.filter(g => g.severity === 'low');
+
+  if (critical.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
+    lines.push('');
+    for (const g of critical) {
+      const badge = severityBadge(g.severity);
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`              ${g.message}`);
+      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (medium.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
+    lines.push('');
+    for (const g of medium) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`     ${g.message}`);
+      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (low.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
+    lines.push('');
+    for (const g of low) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
+      lines.push(`     ${c.dim(g.message)}`);
+      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
+      lines.push('');
+    }
+  }
+
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Next Steps')}`);
+  lines.push('');
+  if (critical.length > 0) {
+    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} performance issues first`);
+  }
+  if (medium.length > 0) {
+    const step = critical.length > 0 ? '2.' : '1.';
+    lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues for faster loading`);
+  }
+  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank cwv <url>')} for real-world Core Web Vitals`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Vertical scanner report
+// ---------------------------------------------------------------------------
+
+export function formatVerticalReport(result) {
+  if (result.skipped) {
+    return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
+  }
+
+  const filesScanned = result.files_scanned ?? 1;
+  const detectedTypes = result.detected_types || [];
+  const lines = [];
+
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Vertical Scanner')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}`);
+
+  if (detectedTypes.length === 0) {
+    lines.push('');
+    lines.push(`  ${c.dim('No vertical-specific site types detected.')}`);
+    lines.push(`  ${c.dim('This scanner checks for e-commerce and local business patterns.')}`);
+    lines.push('');
+    return lines.join('\n');
+  }
+
+  lines.push(`  ${c.dim('Detected types:')} ${detectedTypes.map(t => c.cyan(t)).join(', ')}`);
+
+  if (result.ecommerce) {
+    const ecom = result.ecommerce;
+    const ecomScore = ecom.score ?? 0;
+    const ecomGrade = gradeFor(ecomScore);
+    const ecomFindings = ecom.findings || [];
+    const ecomGroups = groupFindings(ecomFindings);
+    ecomGroups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('E-Commerce')}`);
+    lines.push('');
+    lines.push(`  ${ecomGrade.color(` ${ecomScore} `)}  ${scoreBar(ecomScore)}  ${scoreLabel(ecomScore)}`);
+
+    const eCritical = ecomGroups.filter(g => g.severity === 'critical' || g.severity === 'high');
+    const eMedium = ecomGroups.filter(g => g.severity === 'medium');
+    const eLow = ecomGroups.filter(g => g.severity === 'low');
+
+    if (eCritical.length > 0) {
+      lines.push('');
+      lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${eCritical.length} issues)`)}`);
+      lines.push('');
+      for (const g of eCritical) {
+        lines.push(`  ${severityBadge(g.severity)}  ${c.bold(g.rule)}`);
+        lines.push(`              ${g.message}`);
+        lines.push('');
+      }
+    }
+    if (eMedium.length > 0) {
+      lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${eMedium.length} issues)`)}`);
+      lines.push('');
+      for (const g of eMedium) {
+        lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}`);
+        lines.push(`     ${g.message}`);
+        lines.push('');
+      }
+    }
+    if (eLow.length > 0) {
+      lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${eLow.length} issues)`)}`);
+      lines.push('');
+      for (const g of eLow) {
+        lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}`);
+        lines.push(`     ${c.dim(g.message)}`);
+        lines.push('');
+      }
+    }
+  }
+
+  if (result.local) {
+    const loc = result.local;
+    const locScore = loc.score ?? 0;
+    const locGrade = gradeFor(locScore);
+    const locFindings = loc.findings || [];
+    const locGroups = groupFindings(locFindings);
+    locGroups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Local Business')}`);
+    lines.push('');
+    lines.push(`  ${locGrade.color(` ${locScore} `)}  ${scoreBar(locScore)}  ${scoreLabel(locScore)}`);
+
+    const lCritical = locGroups.filter(g => g.severity === 'critical' || g.severity === 'high');
+    const lMedium = locGroups.filter(g => g.severity === 'medium');
+    const lLow = locGroups.filter(g => g.severity === 'low');
+
+    if (lCritical.length > 0) {
+      lines.push('');
+      lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${lCritical.length} issues)`)}`);
+      lines.push('');
+      for (const g of lCritical) {
+        lines.push(`  ${severityBadge(g.severity)}  ${c.bold(g.rule)}`);
+        lines.push(`              ${g.message}`);
+        lines.push('');
+      }
+    }
+    if (lMedium.length > 0) {
+      lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${lMedium.length} issues)`)}`);
+      lines.push('');
+      for (const g of lMedium) {
+        lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}`);
+        lines.push(`     ${g.message}`);
+        lines.push('');
+      }
+    }
+    if (lLow.length > 0) {
+      lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${lLow.length} issues)`)}`);
+      lines.push('');
+      for (const g of lLow) {
+        lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}`);
+        lines.push(`     ${c.dim(g.message)}`);
+        lines.push('');
+      }
+    }
+  }
+
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Next Steps')}`);
+  lines.push('');
+  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank schema .')} to validate structured data for your vertical`);
+  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank scan .')} for a full SEO audit`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Security report
+// ---------------------------------------------------------------------------
+
+export function formatSecurityReport(result) {
+  if (result.skipped) {
+    return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
+  }
+
+  const score = result.scores.security;
+  const { findings, summary } = result;
+  const filesScanned = result.files_scanned ?? 1;
+  const groups = groupFindings(findings);
+  groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+
+  const grade = gradeFor(score);
+  const lines = [];
+
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Security Audit')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+  lines.push(`  ${grade.color(` ${score} `)}  ${scoreBar(score)}  ${scoreLabel(score)}`);
+  lines.push('');
+  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}    ${summary.critical > 0 ? c.red(`Critical: ${summary.critical}`) : c.dim(`Critical: ${summary.critical}`)}  ${summary.high > 0 ? c.red(`High: ${summary.high}`) : c.dim(`High: ${summary.high}`)}  ${summary.medium > 0 ? c.yellow(`Medium: ${summary.medium}`) : c.dim(`Medium: ${summary.medium}`)}  ${c.dim(`Low: ${summary.low}`)}`);
+
+  if (groups.length === 0) {
+    lines.push('');
+    lines.push(`  ${c.green('\u2714')} ${c.bold(c.green('All checks passed!'))} No security issues found.`);
+    lines.push('');
+    return lines.join('\n');
+  }
+
+  const critical = groups.filter(g => g.severity === 'critical' || g.severity === 'high');
+  const medium = groups.filter(g => g.severity === 'medium');
+  const low = groups.filter(g => g.severity === 'low');
+
+  if (critical.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
+    lines.push('');
+    for (const g of critical) {
+      const badge = severityBadge(g.severity);
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`              ${g.message}`);
+      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (medium.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
+    lines.push('');
+    for (const g of medium) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
+      lines.push(`     ${g.message}`);
+      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
+      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
+      lines.push('');
+    }
+  }
+
+  if (low.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
+    lines.push('');
+    for (const g of low) {
+      const hint = FIX_HINTS[g.rule];
+      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
+      lines.push(`     ${c.dim(g.message)}`);
+      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
+      lines.push('');
+    }
+  }
+
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Next Steps')}`);
+  lines.push('');
+  if (critical.length > 0) {
+    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} security issues immediately`);
+  }
+  if (medium.length > 0) {
+    const step = critical.length > 0 ? '2.' : '1.';
+    lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues to harden your site`);
+  }
+  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank scan .')} to check overall SEO health`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
 // Schema report
 // ---------------------------------------------------------------------------
 
@@ -486,3 +1135,4 @@ export function formatSchemaReport(results) {
 
   return lines.join('\n');
 }
+

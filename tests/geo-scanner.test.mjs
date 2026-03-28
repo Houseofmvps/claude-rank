@@ -103,7 +103,7 @@ describe('geo-scanner', () => {
 
   describe('individual rules', () => {
     it('detects missing-robots-ai-access when no robots.txt', () => {
-      const result = scanDirectory(path.join(FIXTURES, 'good-seo-dir'));
+      const result = scanDirectory(path.join(FIXTURES, 'bad-seo-dir'));
       assert.ok(result.findings.some(f => f.rule === 'missing-robots-ai-access'));
     });
 

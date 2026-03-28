@@ -60,6 +60,14 @@ const RULES = {
   'no-about-page':              { severity: 'low', deduction: 2 },
   'no-internal-links':          { severity: 'low', deduction: 2 },
   'short-meta-description':     { severity: 'low', deduction: 2 },
+
+  // Phase 1: New AI bot rules
+  'applebot-blocked':           { severity: 'medium', deduction: 5 },
+  'bytespider-blocked':         { severity: 'medium', deduction: 5 },
+  'meta-agent-blocked':         { severity: 'low', deduction: 2 },
+  'amazonbot-blocked':          { severity: 'low', deduction: 2 },
+  'missing-date-modified-ai':   { severity: 'medium', deduction: 5 },
+  'no-source-citations':        { severity: 'medium', deduction: 5 },
 };
 
 // ---------------------------------------------------------------------------
@@ -103,6 +111,7 @@ function parseRobotsTxt(content) {
   const AI_BOT_NAMES = new Set([
     'gptbot', 'perplexitybot', 'claudebot', 'claude-web',
     'google-extended', 'ccbot',
+    'applebot', 'applebot-extended', 'bytespider', 'meta-externalagent', 'amazonbot',
   ]);
 
   for (const raw of lines) {
@@ -318,6 +327,19 @@ export function scanDirectory(rootDir) {
       add('ccbot-blocked', 'CCBot (Common Crawl) is blocked — reduces AI training data coverage');
     }
 
+    if (robotsInfo.blockedBots.has('applebot') || robotsInfo.blockedBots.has('applebot-extended')) {
+      add('applebot-blocked', 'AppleBot is blocked in robots.txt — Apple Siri and Spotlight cannot index this content');
+    }
+    if (robotsInfo.blockedBots.has('bytespider')) {
+      add('bytespider-blocked', 'Bytespider (TikTok) is blocked in robots.txt — TikTok search cannot discover this content');
+    }
+    if (robotsInfo.blockedBots.has('meta-externalagent')) {
+      add('meta-agent-blocked', 'Meta-ExternalAgent is blocked in robots.txt — Meta AI cannot index this content');
+    }
+    if (robotsInfo.blockedBots.has('amazonbot')) {
+      add('amazonbot-blocked', 'Amazonbot is blocked in robots.txt — Amazon Alexa and Rufus cannot index this content');
+    }
+
     if (!robotsInfo.hasSitemap) {
       add('no-sitemap-for-ai', 'robots.txt has no Sitemap: directive — AI crawlers cannot discover all pages');
     }
@@ -383,6 +405,8 @@ export function scanDirectory(rootDir) {
   let avgParaWords = 0;
   let paraWordSamples = 0;
   const allRawHtml = [];
+  let anyHasDateModified = false;
+  let totalAuthoritativeCitations = 0;
 
   let scanIdx = 0;
   for (const filePath of htmlFiles) {
@@ -487,6 +511,23 @@ export function scanDirectory(rootDir) {
       const approxAvg = state.wordCount / pCount;
       avgParaWords = (avgParaWords * paraWordSamples + approxAvg) / (paraWordSamples + 1);
       paraWordSamples++;
+    }
+
+    // Phase 1: Track dateModified across pages
+    if (state.hasDateModified) {
+      anyHasDateModified = true;
+    }
+
+    // Phase 1: Count authoritative external links
+    for (const href of state.externalLinks) {
+      try {
+        const url = new URL(href);
+        const host = url.hostname.toLowerCase();
+        if (host.endsWith('.edu') || host.endsWith('.gov') || host.endsWith('.org') ||
+            host.endsWith('.ac.uk') || host.endsWith('.gov.uk')) {
+          totalAuthoritativeCitations++;
+        }
+      } catch { /* invalid URL */ }
     }
   }
   if (htmlFiles.length > 5) process.stderr.write('\r\x1b[K');
@@ -629,6 +670,16 @@ export function scanDirectory(rootDir) {
   // Low — Short meta descriptions
   if (shortMetaDescCount > 0 && shortMetaDescCount >= pageCount / 2) {
     add('short-meta-description', `${shortMetaDescCount} page(s) have meta descriptions under 70 chars — short descriptions provide insufficient context for AI citation`);
+  }
+
+  // Phase 1: Content freshness — dateModified missing across all pages
+  if (pageCount > 0 && !anyHasDateModified) {
+    add('missing-date-modified-ai', 'No pages have dateModified metadata — AI engines prefer fresh, recently updated content for citations');
+  }
+
+  // Phase 1: Source citations — no authoritative external links
+  if (pageCount > 0 && totalAuthoritativeCitations === 0) {
+    add('no-source-citations', 'No citations to authoritative sources (.edu, .gov, .org) found — AI engines trust content that references authoritative sources');
   }
 
   // -------------------------------------------------------------------------

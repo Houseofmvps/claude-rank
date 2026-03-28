@@ -100,6 +100,20 @@ const RULES = {
   'no-manifest':               { severity: 'low', deduction: 2 },
   'all-scripts-blocking':      { severity: 'low', deduction: 2 },
   'meta-content-mismatch':     { severity: 'low', deduction: 2 },
+
+  // Phase 1: New SEO rules
+  'missing-robots-txt':        { severity: 'high', deduction: 10 },
+  'missing-sitemap-xml':       { severity: 'high', deduction: 10 },
+  'nofollow-internal-links':   { severity: 'medium', deduction: 5 },
+  'missing-date-modified':     { severity: 'medium', deduction: 5 },
+  'hreflang-missing-self':     { severity: 'medium', deduction: 5 },
+  'hreflang-invalid-code':     { severity: 'medium', deduction: 5 },
+  'low-readability':           { severity: 'medium', deduction: 5 },
+  'paragraph-wall-of-text':    { severity: 'low', deduction: 2 },
+  'high-passive-voice':        { severity: 'low', deduction: 2 },
+  'duplicate-content':         { severity: 'high', deduction: 10 },
+  'mixed-content':             { severity: 'medium', deduction: 5 },
+  'missing-lazy-loading':      { severity: 'low', deduction: 2 },
 };
 
 // ---------------------------------------------------------------------------
@@ -123,6 +137,55 @@ function extractKeywords(text) {
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .filter(w => w.length >= 3 && !STOP_WORDS.has(w));
+}
+
+// ---------------------------------------------------------------------------
+// Readability helpers
+// ---------------------------------------------------------------------------
+
+function countSyllables(word) {
+  word = word.toLowerCase().replace(/[^a-z]/g, '');
+  if (word.length <= 2) return 1;
+  // Remove trailing silent e
+  word = word.replace(/e$/, '');
+  const matches = word.match(/[aeiouy]+/g);
+  return matches ? Math.max(1, matches.length) : 1;
+}
+
+function fleschKincaid(text) {
+  const sentences = text.split(/[.!?]+\s/).filter(s => s.trim().length > 0);
+  const words = text.split(/\s+/).filter(w => w.length > 0);
+  if (sentences.length === 0 || words.length === 0) return 100;
+  const syllables = words.reduce((sum, w) => sum + countSyllables(w), 0);
+  return 206.835 - 1.015 * (words.length / sentences.length) - 84.6 * (syllables / words.length);
+}
+
+// ---------------------------------------------------------------------------
+// ISO 639-1 language code validation
+// ---------------------------------------------------------------------------
+
+const VALID_LANG_CODES = new Set([
+  'aa','ab','af','ak','am','an','ar','as','av','ay','az','ba','be','bg','bh','bi','bm','bn','bo','br','bs','ca','ce','ch','co','cr','cs','cu','cv','cy','da','de','dv','dz','ee','el','en','eo','es','et','eu','fa','ff','fi','fj','fo','fr','fy','ga','gd','gl','gn','gu','gv','ha','he','hi','ho','hr','ht','hu','hy','hz','ia','id','ie','ig','ii','ik','in','io','is','it','iu','ja','jv','ka','kg','ki','kj','kk','kl','km','kn','ko','kr','ks','ku','kv','kw','ky','la','lb','lg','li','ln','lo','lt','lu','lv','mg','mh','mi','mk','ml','mn','mo','mr','ms','mt','my','na','nb','nd','ne','ng','nl','nn','no','nr','nv','ny','oc','oj','om','or','os','pa','pi','pl','ps','pt','qu','rm','rn','ro','ru','rw','sa','sc','sd','se','sg','si','sk','sl','sm','sn','so','sq','sr','ss','st','su','sv','sw','ta','te','tg','th','ti','tk','tl','tn','to','tr','ts','tt','tw','ty','ug','uk','ur','uz','ve','vi','vo','wa','wo','xh','yi','yo','za','zh','zu',
+]);
+
+function isValidLangCode(code) {
+  // Handle codes like "en-US", "pt-BR", "x-default"
+  if (code === 'x-default') return true;
+  const primary = code.split('-')[0].toLowerCase();
+  return VALID_LANG_CODES.has(primary);
+}
+
+// ---------------------------------------------------------------------------
+// File existence helper
+// ---------------------------------------------------------------------------
+
+function fileExists(filePath) {
+  try {
+    fs.statSync(filePath);
+    return true;
+  } catch {
+    return false;
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -362,6 +425,80 @@ function checkFile(state, filePath, rootDir, opts = {}) {
     }
   }
 
+  // --- Phase 1: New per-file checks ---
+
+  // Nofollow on internal links
+  if (state.nofollowInternalLinks > 0) {
+    add('nofollow-internal-links', `${state.nofollowInternalLinks} internal link(s) have rel="nofollow" — this prevents link equity from flowing within your site`);
+  }
+
+  // Missing dateModified on Article/BlogPosting pages
+  if (!state.hasDateModified && state.jsonLdContent.length > 0) {
+    const hasArticleSchema = state.jsonLdContent.some(raw =>
+      raw.includes('Article') || raw.includes('BlogPosting')
+    );
+    if (hasArticleSchema) {
+      add('missing-date-modified', 'Article/BlogPosting schema found but no dateModified — search engines use this for content freshness signals');
+    }
+  }
+
+  // Hreflang self-reference check
+  if (state.hreflangTags.length > 0) {
+    const pageUrl = state.canonicalUrl || '';
+    const hasSelf = state.hreflangTags.some(tag => {
+      if (!pageUrl) return false;
+      return tag.href === pageUrl || tag.href.endsWith('/' + path.basename(filePath));
+    });
+    if (!hasSelf && pageUrl) {
+      add('hreflang-missing-self', 'Hreflang tags are present but none reference the current page URL — each page must include a self-referencing hreflang');
+    }
+  }
+
+  // Hreflang invalid language codes
+  if (state.hreflangTags.length > 0) {
+    const invalidCodes = state.hreflangTags
+      .filter(tag => !isValidLangCode(tag.lang))
+      .map(tag => tag.lang);
+    if (invalidCodes.length > 0) {
+      add('hreflang-invalid-code', `Invalid hreflang language code(s): ${invalidCodes.join(', ')} — use valid ISO 639-1 codes`);
+    }
+  }
+
+  // Readability check (Flesch-Kincaid)
+  if (state.bodyText && contentWords >= 100) {
+    const fkScore = fleschKincaid(state.bodyText);
+    if (fkScore < 30) {
+      add('low-readability', `Flesch-Kincaid readability score is ${Math.round(fkScore)} (very difficult to read) — aim for 30+ for general web content`);
+    }
+  }
+
+  // Wall of text paragraphs
+  if (state.paragraphs.length > 0) {
+    const wallParas = state.paragraphs.filter(p => p.split(/\s+/).length > 150);
+    if (wallParas.length > 0) {
+      add('paragraph-wall-of-text', `${wallParas.length} paragraph(s) exceed 150 words — break up long paragraphs for better readability and scannability`);
+    }
+  }
+
+  // High passive voice
+  if (state.sentences && state.sentences.length >= 5) {
+    const passiveCount = state.sentences.filter(s => /\b(is|are|was|were|been|being|be)\s+\w+ed\b/i.test(s)).length;
+    const passiveRatio = passiveCount / state.sentences.length;
+    if (passiveRatio > 0.3) {
+      add('high-passive-voice', `${Math.round(passiveRatio * 100)}% of sentences use passive voice — consider using active voice for clearer, more engaging content`);
+    }
+  }
+
+  // Mixed content
+  if (state.httpResources.length > 0) {
+    add('mixed-content', `${state.httpResources.length} resource(s) loaded over HTTP on an HTTPS page — this creates mixed content warnings and security issues`);
+  }
+
+  // Missing lazy loading
+  if (state.imageCount > 3 && !state.hasLazyImages) {
+    add('missing-lazy-loading', `Page has ${state.imageCount} images but none use loading="lazy" — lazy loading improves page load performance`);
+  }
+
   return findings;
 }
 
@@ -492,6 +629,42 @@ function crossPageChecks(allStates, rootDir) {
     }
   }
 
+  // --- Phase 1: Duplicate content detection ---
+  if (allStates.length > 1) {
+    const fingerprints = [];
+    for (const { filePath, state } of allStates) {
+      const words = (state.bodyText || '').toLowerCase().split(/\s+/).filter(w => w.length > 0).slice(0, 200);
+      fingerprints.push({ filePath, words, wordSet: new Set(words) });
+    }
+
+    for (let i = 0; i < fingerprints.length; i++) {
+      for (let j = i + 1; j < fingerprints.length; j++) {
+        const a = fingerprints[i];
+        const b = fingerprints[j];
+        if (a.words.length < 50 || b.words.length < 50) continue;
+
+        // Calculate word overlap percentage
+        const smaller = a.wordSet.size <= b.wordSet.size ? a.wordSet : b.wordSet;
+        const larger = a.wordSet.size > b.wordSet.size ? a.wordSet : b.wordSet;
+        let overlap = 0;
+        for (const w of smaller) {
+          if (larger.has(w)) overlap++;
+        }
+        const overlapRatio = overlap / smaller.size;
+
+        if (overlapRatio > 0.8) {
+          findings.push({
+            rule: 'duplicate-content',
+            severity: RULES['duplicate-content'].severity,
+            file: path.relative(rootDir, a.filePath),
+            message: `Content is ${Math.round(overlapRatio * 100)}% similar to "${path.relative(rootDir, b.filePath)}" — duplicate content dilutes search rankings`,
+            duplicates: [path.relative(rootDir, a.filePath), path.relative(rootDir, b.filePath)],
+          });
+        }
+      }
+    }
+  }
+
   return findings;
 }
 
@@ -591,7 +764,34 @@ export function scanDirectory(rootDir) {
   // Run cross-page checks
   const crossFindings = multiPage ? crossPageChecks(allStates, absRoot) : [];
 
-  const allFindings = [...perFileFindings, ...crossFindings];
+  // --- Phase 1: Project-level checks ---
+  const projectFindings = [];
+
+  // Check for robots.txt
+  const hasRobotsTxt = fileExists(path.join(absRoot, 'robots.txt')) ||
+                       fileExists(path.join(absRoot, 'public', 'robots.txt'));
+  if (!hasRobotsTxt) {
+    projectFindings.push({
+      rule: 'missing-robots-txt',
+      severity: RULES['missing-robots-txt'].severity,
+      file: '',
+      message: 'No robots.txt found — search engines need this to understand crawling rules',
+    });
+  }
+
+  // Check for sitemap.xml
+  const hasSitemapXml = fileExists(path.join(absRoot, 'sitemap.xml')) ||
+                        fileExists(path.join(absRoot, 'public', 'sitemap.xml'));
+  if (!hasSitemapXml) {
+    projectFindings.push({
+      rule: 'missing-sitemap-xml',
+      severity: RULES['missing-sitemap-xml'].severity,
+      file: '',
+      message: 'No sitemap.xml found — search engines use sitemaps to discover and prioritize pages',
+    });
+  }
+
+  const allFindings = [...perFileFindings, ...crossFindings, ...projectFindings];
 
   // Score
   const seoScore = calculateScore(allFindings);

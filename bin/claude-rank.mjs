@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Standalone CLI: npx claude-rank <command> <directory>
-// Commands: scan, geo, aeo, compete, cwv, schema
+// Commands: scan, geo, aeo, compete, cwv, schema, citability, content, perf, vertical, security
 
 const args = process.argv.slice(2);
 const jsonFlag = args.includes('--json');
@@ -40,6 +40,11 @@ const commands = {
   geo: '../tools/geo-scanner.mjs',
   aeo: '../tools/aeo-scanner.mjs',
   schema: '../tools/schema-engine.mjs',
+  citability: '../tools/citability-scorer.mjs',
+  content: '../tools/content-analyzer.mjs',
+  perf: '../tools/perf-scanner.mjs',
+  vertical: '../tools/vertical-scanner.mjs',
+  security: '../tools/security-scanner.mjs',
 };
 
 if (command === 'help' || command === '--help') {
@@ -48,13 +53,18 @@ if (command === 'help' || command === '--help') {
 Usage: claude-rank <command> [directory|url] [flags]
 
 Commands:
-  scan     Run core SEO scanner (default)
-  geo      Run GEO (AI search) scanner
-  aeo      Run AEO (answer engine) scanner
-  compete  Competitive X-Ray — compare your site vs any competitor URL
-  cwv      Run Core Web Vitals / Lighthouse audit (needs Chrome installed)
-  schema   Detect and validate structured data
-  help     Show this help message
+  scan        Run core SEO scanner (default)
+  geo         Run GEO (AI search) scanner
+  aeo         Run AEO (answer engine) scanner
+  citability  Score AI citability (7-dimension analysis)
+  content     Content quality analysis (readability, duplicates, linking)
+  perf        Performance scanner (images, CSS, JS, blocking resources)
+  vertical    Vertical-specific checks (e-commerce, local business)
+  security    Security header and vulnerability scanner
+  compete     Competitive X-Ray — compare your site vs any competitor URL
+  cwv         Run Core Web Vitals / Lighthouse audit (needs Chrome installed)
+  schema      Detect and validate structured data
+  help        Show this help message
 
 Flags:
   --json            Output raw JSON (for programmatic use)
@@ -168,6 +178,11 @@ const {
   formatGeoReport,
   formatAeoReport,
   formatSchemaReport,
+  formatCitabilityReport,
+  formatContentReport,
+  formatPerfReport,
+  formatVerticalReport,
+  formatSecurityReport,
 } = await import(new URL('../tools/lib/formatter.mjs', import.meta.url));
 
 const formatters = {
@@ -175,6 +190,11 @@ const formatters = {
   geo: formatGeoReport,
   aeo: formatAeoReport,
   schema: formatSchemaReport,
+  citability: formatCitabilityReport,
+  content: formatContentReport,
+  perf: formatPerfReport,
+  vertical: formatVerticalReport,
+  security: formatSecurityReport,
 };
 
 // URL-based scanning (scan command only)
@@ -279,7 +299,7 @@ if (isUrl) {
     }
   } else {
     const mod = await import(new URL(toolPath, import.meta.url));
-    const result = mod.scanDirectory(targetDir);
+    const result = command === 'content' ? mod.analyzeDirectory(targetDir) : mod.scanDirectory(targetDir);
     if (jsonFlag) {
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -288,11 +308,15 @@ if (isUrl) {
 
     // Check threshold
     if (thresholdFlag != null) {
-      const scoreKey = command === 'scan' ? 'seo' : command;
-      const score = result.scores?.[scoreKey] ?? 0;
-      if (score < thresholdFlag) {
-        console.error(`Score ${score} is below threshold ${thresholdFlag}`);
-        process.exit(1);
+      const scoreKey = command === 'scan' ? 'seo' : command === 'citability' ? 'citability' : command === 'perf' ? 'performance' : command === 'content' ? null : command;
+      if (scoreKey === null) {
+        // content scanner has no single score — skip threshold check
+      } else {
+        const score = result.scores?.[scoreKey] ?? 0;
+        if (score < thresholdFlag) {
+          console.error(`Score ${score} is below threshold ${thresholdFlag}`);
+          process.exit(1);
+        }
       }
     }
   }

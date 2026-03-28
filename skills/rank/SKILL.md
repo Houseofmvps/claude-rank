@@ -16,8 +16,11 @@ description: "Main orchestrator for claude-rank SEO/GEO/AEO toolkit. Routes to s
 | `/rank fix [dir]` | rank-fix | Auto-fix all findings |
 | `/rank schema [dir]` | rank-schema | Schema detect/validate/generate |
 | `/rank compete <url> [dir]` | rank-compete | Competitive X-Ray vs any URL |
-
-*Future phases (not yet implemented): technical, content, speed, local, images, keywords, report, plan*
+| `/rank citability [dir]` | rank-citability | AI Citability Score (7-dimension) |
+| `/rank content [dir]` | rank-content | Content quality analysis |
+| `/rank perf [dir]` | rank-perf | Performance risk assessment |
+| `/rank vertical [dir]` | rank-vertical | E-Commerce / Local Business checks |
+| `/rank security [dir]` | rank-security | Security headers audit |
 
 ## Quick Health Check (bare /rank)
 

@@ -131,6 +131,32 @@ function createPageState() {
     totalScripts: 0,
 
     hasAmpVersion: false,
+
+    // --- Phase 1: New fields ---
+    nofollowInternalLinks: 0,
+    hreflangTags: [],
+    dateModified: '',
+    hasDateModified: false,
+    sentences: [],
+    paragraphs: [],
+    inlineCssSize: 0,
+    inlineJsSize: 0,
+    preconnectLinks: [],
+    prefetchLinks: [],
+    fontDisplaySwap: false,
+    hasLazyImages: false,
+    imageCount: 0,
+    externalScriptDomains: [],
+    hasFetchPriority: false,
+    httpResources: [],
+    tableCount: 0,
+    olCount: 0,
+    ulCount: 0,
+    hasGoogleMapsEmbed: false,
+    hasTelLink: false,
+    hasAddressTag: false,
+    productSignals: 0,
+    localBusinessSignals: 0,
   };
 }
 
@@ -160,6 +186,10 @@ export function parseHtml(htmlString) {
   let bodyTextBuffer = '';
   let mainTextBuffer = '';
   let inMain = false;
+  let inParagraph = false;
+  let currentParagraphText = '';
+  let inlineStyleBuffer = '';
+  const externalScriptDomainSet = new Set();
 
   const parser = new Parser(
     {
@@ -242,6 +272,12 @@ export function parseHtml(htmlString) {
             state.hasTwitterImage = true;
           }
 
+          // article:modified_time
+          if (propLower === 'article:modified_time' && content) {
+            state.dateModified = content;
+            state.hasDateModified = true;
+          }
+
           return;
         }
 
@@ -256,6 +292,13 @@ export function parseHtml(htmlString) {
           }
           if (rel === 'alternate' && attribs.hreflang) {
             state.hasHreflang = true;
+            state.hreflangTags.push({ lang: attribs.hreflang, href: href });
+          }
+          if (rel === 'preconnect' && href) {
+            state.preconnectLinks.push(href);
+          }
+          if ((rel === 'prefetch' || rel === 'dns-prefetch') && href) {
+            state.prefetchLinks.push(href);
           }
           if (rel === 'icon' || rel === 'shortcut icon' || rel === 'apple-touch-icon') {
             state.hasFavicon = true;
@@ -302,6 +345,20 @@ export function parseHtml(htmlString) {
             }
           }
 
+          // External script domain tracking
+          if (src) {
+            try {
+              const srcUrl = new URL(src, 'https://placeholder.invalid');
+              if (srcUrl.hostname !== 'placeholder.invalid') {
+                externalScriptDomainSet.add(srcUrl.hostname);
+              }
+            } catch { /* invalid URL */ }
+            // Mixed content check
+            if (src.startsWith('http://')) {
+              state.httpResources.push(src);
+            }
+          }
+
           inScript = true;
           currentScriptSrc = src;
           return;
@@ -341,6 +398,28 @@ export function parseHtml(htmlString) {
           if (!width || !height) {
             state.imagesWithoutDimensions++;
           }
+
+          state.imageCount++;
+          if ((attribs.loading || '').toLowerCase() === 'lazy') {
+            state.hasLazyImages = true;
+          }
+          if ((attribs.fetchpriority || '').toLowerCase() === 'high') {
+            state.hasFetchPriority = true;
+          }
+          // Mixed content check for img src
+          const imgSrc = attribs.src || '';
+          if (imgSrc.startsWith('http://')) {
+            state.httpResources.push(imgSrc);
+          }
+          return;
+        }
+
+        // <iframe>
+        if (tag === 'iframe') {
+          const iframeSrc = attribs.src || '';
+          if (iframeSrc.includes('google.com/maps')) {
+            state.hasGoogleMapsEmbed = true;
+          }
           return;
         }
 
@@ -355,11 +434,51 @@ export function parseHtml(htmlString) {
           const href = attribs.href || '';
           if (!href) return;
 
+          if (href.startsWith('tel:')) {
+            state.hasTelLink = true;
+          }
+
           if (href.startsWith('http://') || href.startsWith('https://')) {
             state.externalLinks.push(href);
           } else if (href.startsWith('/') || href.startsWith('./')) {
             state.internalLinks.push(href);
+            // Check for nofollow on internal links
+            const rel = (attribs.rel || '').toLowerCase();
+            if (rel.includes('nofollow')) {
+              state.nofollowInternalLinks++;
+            }
           }
+          return;
+        }
+
+        // <address>
+        if (tag === 'address') {
+          state.hasAddressTag = true;
+          return;
+        }
+
+        // <table>
+        if (tag === 'table') {
+          state.tableCount++;
+          return;
+        }
+
+        // <ol>
+        if (tag === 'ol') {
+          state.olCount++;
+          return;
+        }
+
+        // <ul>
+        if (tag === 'ul') {
+          state.ulCount++;
+          return;
+        }
+
+        // <p> — paragraph tracking
+        if (tag === 'p') {
+          inParagraph = true;
+          currentParagraphText = '';
           return;
         }
       },
@@ -390,11 +509,20 @@ export function parseHtml(htmlString) {
           return;
         }
 
+        // Inline style content — accumulate for size and font-display detection
+        if (inStyle) {
+          inlineStyleBuffer += text;
+          return;
+        }
+
         // Body text (skip script/style)
         if (inBody && !inScript && !inStyle) {
           bodyTextBuffer += text + ' ';
           if (inMain) {
             mainTextBuffer += text + ' ';
+          }
+          if (inParagraph) {
+            currentParagraphText += text;
           }
         }
       },
@@ -415,6 +543,11 @@ export function parseHtml(htmlString) {
           if (isJsonLd) {
             state.jsonLdScripts++;
             isJsonLd = false;
+          } else {
+            // Track inline JS size (non-JSON-LD)
+            if (!currentScriptSrc && inlineScriptBuffer) {
+              state.inlineJsSize += Buffer.byteLength(inlineScriptBuffer, 'utf8');
+            }
           }
           // Check inline script content for analytics patterns (catches lazy-loaded GA etc.)
           if (!state.hasAnalytics && !currentScriptSrc && inlineScriptBuffer) {
@@ -433,7 +566,25 @@ export function parseHtml(htmlString) {
         }
 
         if (tag === 'style') {
+          state.inlineCssSize += Buffer.byteLength(inlineStyleBuffer, 'utf8');
+          // Check for font-display: swap
+          if (/font-display:\s*swap/i.test(inlineStyleBuffer)) {
+            state.fontDisplaySwap = true;
+          }
+          inlineStyleBuffer = '';
           inStyle = false;
+          return;
+        }
+
+        if (tag === 'p') {
+          if (inParagraph) {
+            const trimmedPara = currentParagraphText.trim();
+            if (trimmedPara) {
+              state.paragraphs.push(trimmedPara);
+            }
+          }
+          inParagraph = false;
+          currentParagraphText = '';
           return;
         }
 
@@ -488,6 +639,58 @@ export function parseHtml(htmlString) {
   // Deduplicate JSON-LD content — text events fire once per script block
   // so we need to consolidate per-script captures
   // (each JSON-LD block's text is already pushed as a single entry during onclosetag counting)
+
+  // --- Phase 1: Post-parse processing ---
+
+  // Sentences from body text
+  if (state.bodyText) {
+    state.sentences = state.bodyText.split(/[.!?]+\s/).filter(s => s.trim().length > 0);
+  }
+
+  // External script domains
+  state.externalScriptDomains = Array.from(externalScriptDomainSet);
+
+  // Check JSON-LD for dateModified
+  if (!state.hasDateModified) {
+    for (const raw of state.jsonLdContent) {
+      if (raw.includes('dateModified')) {
+        try {
+          const parsed = JSON.parse(raw);
+          if (parsed.dateModified) {
+            state.dateModified = parsed.dateModified;
+            state.hasDateModified = true;
+          }
+        } catch { /* not valid JSON */ }
+      }
+    }
+  }
+
+  // Mixed content: check link[href] resources tracked via httpResources
+  // (script src and img src already tracked in onopentag)
+
+  // Product signals from body text
+  if (state.bodyText) {
+    const bodyLower = state.bodyText.toLowerCase();
+    const productPatterns = [/add to cart/gi, /buy now/gi, /\$\d/g, /\bprice\b/gi, /\bcheckout\b/gi, /shopping cart/gi];
+    for (const pat of productPatterns) {
+      const matches = bodyLower.match(pat);
+      if (matches) state.productSignals += matches.length;
+    }
+
+    // Local business signals
+    const localPatterns = [
+      /\(\d{3}\)\s?\d{3}[-.]?\d{4}/g,
+      /\+\d{10,}/g,
+      /\b(street|ave|blvd|rd|drive|suite|floor)\b/gi,
+      /\bhours\b/gi,
+      /\bdirections\b/gi,
+      /google\.com\/maps/gi,
+    ];
+    for (const pat of localPatterns) {
+      const matches = state.bodyText.match(pat);
+      if (matches) state.localBusinessSignals += matches.length;
+    }
+  }
 
   return state;
 }

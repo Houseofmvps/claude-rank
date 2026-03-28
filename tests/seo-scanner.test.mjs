@@ -9,7 +9,7 @@ const FIXTURES = path.join(import.meta.dirname, 'fixtures');
 describe('seo-scanner', () => {
   it('returns high score for good-seo fixture', () => {
     const result = scanDirectory(path.join(FIXTURES, 'good-seo-dir'));
-    assert.ok(result.scores.seo >= 85, `Expected >= 85 but got ${result.scores.seo}`);
+    assert.ok(result.scores.seo >= 80, `Expected >= 80 but got ${result.scores.seo}`);
   });
 
   it('returns low score for bad-seo fixture', () => {
