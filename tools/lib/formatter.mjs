@@ -59,11 +59,36 @@ function boxDiv(width) {
 }
 function boxRow(content, width) {
   const vis = stripAnsi(content).length;
-  const padding = Math.max(0, width - vis - 2);
+  const innerWidth = width - 2; // space for left+right padding
+  if (vis > innerWidth) {
+    // Truncate visible content to fit — need to handle ANSI codes
+    content = truncateAnsi(content, innerWidth - 1) + c.dim('\u2026'); // ellipsis
+    const vis2 = stripAnsi(content).length;
+    const padding = Math.max(0, innerWidth - vis2);
+    return c.dim(`  ${BOX.v}`) + ` ${content}` + ' '.repeat(padding) + c.dim(BOX.v);
+  }
+  const padding = Math.max(0, innerWidth - vis);
   return c.dim(`  ${BOX.v}`) + ` ${content}` + ' '.repeat(padding) + c.dim(BOX.v);
 }
 
-const W = 58; // standard box width
+/** Truncate a string with ANSI codes to a target visible width */
+function truncateAnsi(str, maxVis) {
+  let vis = 0;
+  let i = 0;
+  while (i < str.length && vis < maxVis) {
+    if (str[i] === '\x1b') {
+      // Skip the entire escape sequence
+      const end = str.indexOf('m', i);
+      if (end !== -1) { i = end + 1; continue; }
+    }
+    vis++;
+    i++;
+  }
+  // Include any trailing ANSI reset after the cut point
+  return str.slice(0, i) + '\x1b[0m';
+}
+
+const W = 66; // standard box width — fits 80-col terminals with margin
 
 // ---------------------------------------------------------------------------
 // Human-readable rule names (SEO specialists don't think in kebab-case)
@@ -438,8 +463,11 @@ function premiumScore(lines, score, filesScanned, summary) {
   lines.push(boxRow('', W));
 }
 
-/** Render a findings section (Must Fix / Should Fix / Nice to Have) */
-function premiumFindings(lines, groups, sectionTitle, sectionColor) {
+/**
+ * Render findings in detail — used for Must Fix (critical/high).
+ * Shows severity pill, human name, message, fix hint, affected files, rule ID.
+ */
+function premiumFindingsDetailed(lines, groups, sectionTitle, sectionColor) {
   if (groups.length === 0) return;
 
   lines.push(boxDiv(W));
@@ -462,6 +490,65 @@ function premiumFindings(lines, groups, sectionTitle, sectionColor) {
     }
     lines.push(boxRow(`           ${c.dim(`rule: ${g.rule}`)}`, W));
     lines.push(boxRow('', W));
+  }
+}
+
+/**
+ * Render findings as compact one-liners — used for Should Fix (medium).
+ * Shows severity icon + human name + page count on a single line.
+ */
+function premiumFindingsCompact(lines, groups, sectionTitle, sectionColor) {
+  if (groups.length === 0) return;
+
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold(sectionColor(sectionTitle))} ${c.dim(`(${groups.length})`)}`, W));
+  lines.push(boxRow('', W));
+
+  for (const g of groups) {
+    const name = displayName(g.rule);
+    const icon = severityIcon(g.severity);
+    const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
+    const hint = FIX_HINTS[g.rule];
+    lines.push(boxRow(`  ${icon}  ${name}${pageCount}`, W));
+    if (hint) {
+      lines.push(boxRow(`     ${c.dim('\u2192 ' + hint)}`, W));
+    }
+  }
+  lines.push(boxRow('', W));
+}
+
+/**
+ * Render findings as a count-only summary — used for Nice to Have (low).
+ * Just shows the count and lists issue names inline.
+ */
+function premiumFindingsSummary(lines, groups, sectionTitle, sectionColor) {
+  if (groups.length === 0) return;
+
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold(sectionColor(sectionTitle))} ${c.dim(`(${groups.length})`)}`, W));
+  lines.push(boxRow('', W));
+
+  // List just the names, no details
+  for (const g of groups) {
+    const name = displayName(g.rule);
+    const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length})`) : '';
+    lines.push(boxRow(`  ${c.dim('\u2022')}  ${c.dim(name)}${pageCount}`, W));
+  }
+  lines.push(boxRow('', W));
+}
+
+/** Backward-compat wrapper — routes to the right detail level */
+function premiumFindings(lines, groups, sectionTitle, sectionColor) {
+  if (groups.length === 0) return;
+  // Detect which tier by the title
+  if (sectionTitle.includes('Must Fix')) {
+    premiumFindingsDetailed(lines, groups, sectionTitle, sectionColor);
+  } else if (sectionTitle.includes('Should Fix')) {
+    premiumFindingsCompact(lines, groups, sectionTitle, sectionColor);
+  } else {
+    premiumFindingsSummary(lines, groups, sectionTitle, sectionColor);
   }
 }
 

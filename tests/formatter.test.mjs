@@ -82,7 +82,7 @@ describe('formatSeoReport findings grouping', () => {
       { rule: 'title-too-long', severity: 'medium', file: 'c.html', message: 'Title is too long' },
     ];
     const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
-    assert.ok(out.includes('title-too-long'), 'Expected rule name');
+    assert.ok(out.includes('Title Too Long'), 'Expected human-readable rule name');
     assert.ok(out.includes('3 pages'), 'Expected grouped page count');
   });
 
@@ -91,7 +91,7 @@ describe('formatSeoReport findings grouping', () => {
       { rule: 'thin-content', severity: 'high', file: 'page.html', message: 'Too thin' },
     ];
     const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
-    assert.ok(out.includes('thin-content'), 'Expected rule name');
+    assert.ok(out.includes('Thin Content'), 'Expected human-readable rule name');
     assert.ok(!out.includes('pages)'), 'Should not show page count for single file');
   });
 
