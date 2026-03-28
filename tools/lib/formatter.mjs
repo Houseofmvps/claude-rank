@@ -80,7 +80,8 @@ function formatReport(result, title, scoreKey) {
   }
 
   const score = result.scores[scoreKey];
-  const { files_scanned, findings, summary } = result;
+  const { findings, summary } = result;
+  const files_scanned = result.files_scanned ?? result.pages_scanned ?? 1;
   const groups = groupFindings(findings);
   groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
 
