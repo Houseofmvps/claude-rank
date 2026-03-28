@@ -220,6 +220,7 @@ export async function crawlSite(startUrl, options = {}) {
           url: result.finalUrl,
           html: result.html,
           statusCode: result.statusCode,
+          redirectChain: result.redirectChain || [],
         });
 
         if (onPage) {

@@ -8,6 +8,7 @@
 import { parseHtml, detectPageType } from './lib/html-parser.mjs';
 import { fetchPage } from './lib/url-fetcher.mjs';
 import { crawlSite } from './lib/crawler.mjs';
+import { validateSchema } from './schema-engine.mjs';
 
 // ---------------------------------------------------------------------------
 // Rule definitions (same as seo-scanner, minus cross-page-only rules)
@@ -42,6 +43,7 @@ const RULES = {
   'images-missing-dimensions': { severity: 'medium', deduction: 5 },
   'missing-main-landmark':     { severity: 'medium', deduction: 5 },
   'missing-json-ld':           { severity: 'medium', deduction: 5 },
+  'schema-invalid':            { severity: 'medium', deduction: 5 },
   'missing-favicon':           { severity: 'medium', deduction: 5 },
   'no-analytics':              { severity: 'medium', deduction: 5 },
 
@@ -62,6 +64,7 @@ const RULES = {
   // HTTP-level rules (URL-scan only)
   'http-error':                { severity: 'critical', deduction: 20 },
   'redirect-detected':         { severity: 'low', deduction: 2 },
+  'redirect-chain':            { severity: 'medium', deduction: 5 },
 };
 
 // ---------------------------------------------------------------------------
@@ -203,6 +206,21 @@ function checkPage(state, pageUrl) {
     add('missing-json-ld', 'Page has no JSON-LD structured data');
   }
 
+  // Validate JSON-LD schema against Google's required fields
+  if (state.jsonLdContent && state.jsonLdContent.length > 0) {
+    for (const raw of state.jsonLdContent) {
+      try {
+        const data = JSON.parse(raw);
+        const issues = validateSchema(data);
+        if (issues.length > 0) {
+          add('schema-invalid', `JSON-LD ${data['@type'] || 'unknown'} schema has issues: ${issues.join('; ')}`);
+        }
+      } catch {
+        // Malformed JSON-LD
+      }
+    }
+  }
+
   if (!state.hasFavicon) {
     add('missing-favicon', 'Page is missing a favicon link');
   }
@@ -325,6 +343,20 @@ export async function scanUrl(url) {
       file: url,
       message: `URL redirected: ${url} → ${page.finalUrl}`,
     });
+
+    // Redirect chain detection: flag chains with 2+ hops
+    if (page.redirectChain && page.redirectChain.length > 1) {
+      const chainDef = RULES['redirect-chain'];
+      const hops = page.redirectChain.map(r => `${r.from} (${r.statusCode})`).join(' → ');
+      findings.push({
+        rule: 'redirect-chain',
+        severity: chainDef.severity,
+        file: url,
+        message: `Redirect chain with ${page.redirectChain.length} hops: ${hops} → ${page.finalUrl}`,
+        chainLength: page.redirectChain.length,
+        chain: page.redirectChain,
+      });
+    }
   }
 
   const seoScore = calculateScore(findings);
@@ -345,6 +377,7 @@ export async function scanUrl(url) {
       statusCode: page.statusCode,
       redirected: page.redirected,
       finalUrl: page.finalUrl,
+      redirectChain: page.redirectChain || [],
     },
   };
 }
@@ -460,6 +493,20 @@ export async function scanSite(startUrl, options = {}) {
         severity: def.severity,
         file: page.url,
         message: `HTTP ${page.statusCode} error response`,
+      });
+    }
+
+    // Redirect chain detection
+    if (page.redirectChain && page.redirectChain.length > 1) {
+      const chainDef = RULES['redirect-chain'];
+      const hops = page.redirectChain.map(r => `${r.from} (${r.statusCode})`).join(' → ');
+      pageFindings.push({
+        rule: 'redirect-chain',
+        severity: chainDef.severity,
+        file: page.url,
+        message: `Redirect chain with ${page.redirectChain.length} hops: ${hops} → ${page.url}`,
+        chainLength: page.redirectChain.length,
+        chain: page.redirectChain,
       });
     }
 

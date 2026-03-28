@@ -2,7 +2,7 @@
 
 <img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
 
-### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 74+ rules. Auto-fix everything. Dominate search — traditional and AI.
+### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 80+ rules. Auto-fix everything. Dominate search — traditional and AI.
 
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
 [![npm downloads](https://img.shields.io/npm/dm/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=blue&label=Monthly%20Downloads)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -143,7 +143,7 @@ That's not an SEO problem. That's a visibility problem across every search surfa
 /rank audit
 ```
 
-One command. Three scanners run in parallel — SEO, GEO, and AEO. 74+ rules checked. Every finding gets an automated fix. Score tracked over time.
+One command. Three scanners run in parallel — SEO, GEO, and AEO. 80+ rules checked. Every finding gets an automated fix. Score tracked over time.
 
 ```
 SEO Score:   87/100  ████████████░░  (37 rules)
@@ -158,7 +158,7 @@ Overall:     86/100  READY TO RANK
 
 ## What It Does
 
-### SEO Scanner — 37 Rules
+### SEO Scanner — 39 Rules
 
 Traditional search optimization. The foundation.
 
@@ -166,8 +166,8 @@ Traditional search optimization. The foundation.
 |---|---|
 | **Meta** | Title (length, uniqueness), meta description, viewport, charset, canonical URL, lang attribute |
 | **Content** | H1 presence, heading hierarchy, word count, image alt text, thin content detection |
-| **Technical** | robots.txt, sitemap.xml, HTTPS, mobile-friendly viewport, analytics detection |
-| **Structured Data** | JSON-LD presence, schema validation, required fields |
+| **Technical** | robots.txt, sitemap.xml, HTTPS, mobile-friendly viewport, analytics detection, redirect chain detection |
+| **Structured Data** | JSON-LD presence, schema validation against Google's required fields (14 schema types) |
 | **Cross-Page** | Duplicate titles across pages, duplicate descriptions, canonical conflicts, orphan pages |
 
 ### GEO Scanner — 25 Rules
@@ -203,6 +203,33 @@ Every finding has a fix. Not "consider adding" — actual file generation:
 | **sitemap.xml** | Auto-detected routes (Next.js App/Pages Router, static HTML) |
 | **llms.txt** | AI discoverability file from your package.json |
 | **JSON-LD Schema** | 12 types: Organization, Article, Product, FAQPage, HowTo, LocalBusiness, Person, WebSite, BreadcrumbList, SoftwareApplication, VideoObject, ItemList |
+
+### Core Web Vitals (Lighthouse)
+
+Optional performance scoring powered by Lighthouse. Requires `lighthouse` and `chrome-launcher`:
+
+```bash
+npm install -g lighthouse chrome-launcher
+claude-rank cwv https://example.com
+```
+
+| Metric | What it measures | Good | Poor |
+|---|---|---|---|
+| **LCP** | Largest Contentful Paint | < 2.5s | > 4.0s |
+| **CLS** | Cumulative Layout Shift | < 0.1 | > 0.25 |
+| **FCP** | First Contentful Paint | < 1.8s | > 3.0s |
+| **TBT** | Total Blocking Time (proxy for INP) | < 200ms | > 600ms |
+| **SI** | Speed Index | < 3.4s | > 5.8s |
+
+Graceful fallback: if Lighthouse isn't installed, tells the user how to enable it.
+
+### Post-Audit Action Plans
+
+Every audit now ends with exact step-by-step instructions for:
+
+- **Google Search Console** — submit sitemap, request indexing for money pages, check coverage, validate rich results, monitor Core Web Vitals
+- **Bing Webmaster Tools** — submit URLs, enable IndexNow, verify robots.txt for Copilot/ChatGPT visibility
+- **AI Search Verification** — test visibility in ChatGPT, Perplexity, Gemini, Google AI Overviews
 
 ### Schema Engine — Full CRUD
 
@@ -250,6 +277,7 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | `claude-rank geo ./project` | GEO scan — AI search optimization (25 rules) |
 | `claude-rank aeo ./project` | AEO scan — answer engine optimization (12 rules) |
 | `claude-rank schema ./project` | Detect structured data across all HTML |
+| `claude-rank cwv https://example.com` | Core Web Vitals via Lighthouse (optional) |
 | `claude-rank help` | Show available commands |
 
 ## Slash Commands (Claude Code)
@@ -269,13 +297,20 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 
 | Feature | claude-rank | claude-seo |
 |---------|:-----------:|:----------:|
-| SEO rules | 37 | ~20 |
+| SEO rules | 39 | ~20 |
 | GEO — AI search (Perplexity, ChatGPT, Gemini) | 25 rules | Basic |
 | AEO — featured snippets, voice search | 12 rules | None |
 | Auto-fix generators | Yes | No |
 | Schema management (detect / validate / generate / inject) | Full CRUD | Detect only |
+| Core Web Vitals / Lighthouse | Yes (optional) | No |
+| Redirect chain detection | Yes | No |
+| Schema validation (Google required fields) | 14 types | No |
+| Post-audit GSC/Bing action plans | Yes | No |
 | Score tracking with history and trends | Yes | None |
 | Cross-page analysis (duplicates, orphans, canonicals) | Yes | No |
+| Multi-page URL crawling (up to 50 pages) | Yes | No |
+| HTML report export (agency-ready) | Yes | No |
+| CI/CD threshold mode | Yes | No |
 | AI bot detection | 9 bots | Basic |
 | llms.txt generation | Yes | No |
 | robots.txt generation | Yes | No |
@@ -302,7 +337,7 @@ Two terms that matter and are often confused:
 | **SSRF protection** | All HTTP tools block private IPs, cloud metadata, non-HTTP schemes |
 | **No telemetry** | Zero data collection. No phone-home. Ever. |
 | **1 dependency** | `htmlparser2` only (30KB). No native bindings. No `node-gyp`. |
-| **85 tests** | Security module, all scanners, CLI, integration tests |
+| **200 tests** | Security module, all scanners, CLI, integration tests |
 | **File safety** | 10MB read cap. 5MB response cap. Restrictive write permissions. |
 
 See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
@@ -313,7 +348,7 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 | Category | Count | Highlights |
 |---|---|---|
-| **Tools** | 8 | SEO scanner (37 rules), GEO scanner (25 rules), AEO scanner (12 rules), schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
+| **Tools** | 9 | SEO scanner (39 rules), GEO scanner (25 rules), AEO scanner (12 rules), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
 | **Skills** | 6 | /rank, /rank audit, /rank geo, /rank aeo, /rank fix, /rank schema |
 | **Agents** | 4 | SEO auditor, GEO auditor, AEO auditor, Schema auditor |
 | **Commands** | 6 | All slash commands above |
@@ -357,7 +392,7 @@ Found a bug? Want a new scanner rule? [Open an issue](https://github.com/Houseof
 git clone https://github.com/Houseofmvps/claude-rank.git
 cd claude-rank
 npm install
-npm test              # 85 tests, node:test
+npm test              # 200 tests, node:test
 node tools/<tool>.mjs # No build step
 ```
 

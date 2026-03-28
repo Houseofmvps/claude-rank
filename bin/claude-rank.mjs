@@ -42,6 +42,7 @@ Commands:
   scan     Run core SEO scanner (default)
   geo      Run GEO (AI search) scanner
   aeo      Run AEO (answer engine) scanner
+  cwv      Run Core Web Vitals / Lighthouse audit (requires: npm i -g lighthouse chrome-launcher)
   schema   Detect and validate structured data
   help     Show this help message
 
@@ -69,6 +70,37 @@ Examples:
   claude-rank scan ./site --threshold 80
   claude-rank scan . --report html --threshold 80
 `);
+  process.exit(0);
+}
+
+// Handle CWV command separately (requires URL, optional dependency)
+if (command === 'cwv') {
+  const url = dir.startsWith('http://') || dir.startsWith('https://') ? dir : null;
+  if (!url) {
+    console.error('The cwv command requires a URL. Usage: claude-rank cwv https://example.com');
+    process.exit(1);
+  }
+
+  // Clear argv before importing
+  process.argv = process.argv.slice(0, 2);
+
+  const { runLighthouse, isAvailable } = await import(new URL('../tools/lighthouse-scanner.mjs', import.meta.url));
+  const check = isAvailable();
+  if (!check.available) {
+    console.log(`\n  Core Web Vitals scanner requires Lighthouse.\n`);
+    console.log(`  Install: npm install -g lighthouse chrome-launcher\n`);
+    console.log(`  Then run: claude-rank cwv ${url}\n`);
+    process.exit(0);
+  }
+
+  const result = await runLighthouse(url);
+  if (jsonFlag) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    // Pretty output is handled inside lighthouse-scanner.mjs CLI
+    // For programmatic use, just output JSON
+    console.log(JSON.stringify(result, null, 2));
+  }
   process.exit(0);
 }
 

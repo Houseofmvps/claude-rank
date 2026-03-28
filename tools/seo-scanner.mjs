@@ -7,6 +7,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parseHtml, findHtmlFiles, detectPageType } from './lib/html-parser.mjs';
 import { checkFileSize } from './lib/security.mjs';
+import { validateSchema } from './schema-engine.mjs';
 
 // ---------------------------------------------------------------------------
 // Backend framework detection
@@ -80,6 +81,7 @@ const RULES = {
   'images-missing-dimensions': { severity: 'medium', deduction: 5 },
   'missing-main-landmark':     { severity: 'medium', deduction: 5 },
   'missing-json-ld':           { severity: 'medium', deduction: 5 },
+  'schema-invalid':            { severity: 'medium', deduction: 5 },
   'missing-favicon':           { severity: 'medium', deduction: 5 },
   'no-analytics':              { severity: 'medium', deduction: 5 },
 
@@ -241,6 +243,21 @@ function checkFile(state, filePath, rootDir, opts = {}) {
 
   if (state.jsonLdScripts === 0) {
     add('missing-json-ld', 'Page has no JSON-LD structured data');
+  }
+
+  // Validate JSON-LD schema against Google's required fields
+  if (state.jsonLdContent && state.jsonLdContent.length > 0) {
+    for (const raw of state.jsonLdContent) {
+      try {
+        const data = JSON.parse(raw);
+        const issues = validateSchema(data);
+        if (issues.length > 0) {
+          add('schema-invalid', `JSON-LD ${data['@type'] || 'unknown'} schema has issues: ${issues.join('; ')}`);
+        }
+      } catch {
+        // Malformed JSON-LD — already handled by missing-json-ld if count is 0
+      }
+    }
   }
 
   if (!state.hasFavicon) {
