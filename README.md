@@ -4,6 +4,7 @@
 
 ### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 170+ rules. Competitive X-Ray. Auto-fix everything. Dominate search — traditional and AI.
 
+[![CI](https://img.shields.io/github/actions/workflow/status/Houseofmvps/claude-rank/ci.yml?style=for-the-badge&logo=github&label=CI)](https://github.com/Houseofmvps/claude-rank/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
 [![npm downloads](https://img.shields.io/npm/dm/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=blue&label=Monthly%20Downloads)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
 [![npm total](https://img.shields.io/npm/dt/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=cyan&label=Total%20Downloads)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -163,11 +164,14 @@ npx @houseofmvps/claude-rank scan ./site --threshold 80  # CI/CD mode
 ### Install globally
 
 ```bash
-npm install -g @houseofmvps/claude-rank
+npm install -g @houseofmvps/claude-rank    # scoped (official)
+npm install -g claude-rank-seo             # unscoped (shorter)
 claude-rank scan ./my-project
 claude-rank scan https://example.com --pages 20
 claude-rank cwv https://example.com    # Core Web Vitals (just needs Chrome)
 ```
+
+> Both packages are identical. `claude-rank-seo` is an unscoped alias for easier `npx` usage.
 
 ---
 
