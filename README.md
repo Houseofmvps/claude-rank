@@ -28,18 +28,6 @@
 
 ---
 
-## See It In Action
-
-<div align="center">
-
-<img src="assets/demo.gif" alt="claude-rank demo — SEO, GEO, Citability, Security, Content Brief scanning" width="100%"/>
-
-*Real output scanning [savemrr.co](https://savemrr.co) (27 pages) and [houseofmvps.com](https://houseofmvps.com) live URL.*
-
-</div>
-
----
-
 ## Quick Start
 
 ### Use as a Claude Code Plugin (recommended)
