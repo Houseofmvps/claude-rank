@@ -3,7 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
+import { fileURLToPath } from 'url';
 import { analyzeDirectory, analyzeKeywords } from '../tools/content-analyzer.mjs';
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'content-test-'));
@@ -296,7 +299,7 @@ describe('content-analyzer', () => {
 // ---------------------------------------------------------------------------
 
 describe('analyzeKeywords', () => {
-  const fixtureDir = path.join(import.meta.dirname, 'fixtures', 'keyword-cluster-dir');
+  const fixtureDir = path.join(__dirname, 'fixtures', 'keyword-cluster-dir');
 
   it('returns skipped when no HTML files found', () => {
     const dir = makeTmpDir();

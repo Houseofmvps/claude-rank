@@ -3,9 +3,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const BIN = path.join(import.meta.dirname, '..', 'bin', 'claude-rank.mjs');
-const FIXTURES = path.join(import.meta.dirname, 'fixtures', 'good-seo-dir');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const BIN = path.join(__dirname, '..', 'bin', 'claude-rank.mjs');
+const FIXTURES = path.join(__dirname, 'fixtures', 'good-seo-dir');
 
 describe('CLI', () => {
   it('outputs valid JSON for scan command', () => {

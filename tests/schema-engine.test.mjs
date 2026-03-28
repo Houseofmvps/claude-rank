@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import { execFileSync } from 'child_process';
 import fs from 'fs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 import { detectSchema, validateSchema, generateSchema, injectSchema } from '../tools/schema-engine.mjs';
 
-const FIXTURES = path.join(import.meta.dirname, 'fixtures');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES = path.join(__dirname, 'fixtures');
 
 describe('detectSchema', () => {
   it('finds JSON-LD in HTML', () => {
@@ -119,7 +121,7 @@ describe('validate subcommand (CLI)', () => {
     fs.writeFileSync(tmpFile, html);
     try {
       const out = execFileSync('node', [
-        path.join(import.meta.dirname, '..', 'tools', 'schema-engine.mjs'),
+        path.join(__dirname, '..', 'tools', 'schema-engine.mjs'),
         'validate', tmpFile
       ], { encoding: 'utf8' });
       const parsed = JSON.parse(out);
@@ -136,7 +138,7 @@ describe('validate subcommand (CLI)', () => {
     fs.writeFileSync(tmpFile, html);
     try {
       const out = execFileSync('node', [
-        path.join(import.meta.dirname, '..', 'tools', 'schema-engine.mjs'),
+        path.join(__dirname, '..', 'tools', 'schema-engine.mjs'),
         'validate', tmpFile
       ], { encoding: 'utf8' });
       const parsed = JSON.parse(out);
@@ -148,7 +150,7 @@ describe('validate subcommand (CLI)', () => {
 
   it('handles non-existent file gracefully', () => {
     const out = execFileSync('node', [
-      path.join(import.meta.dirname, '..', 'tools', 'schema-engine.mjs'),
+      path.join(__dirname, '..', 'tools', 'schema-engine.mjs'),
       'validate', '/tmp/nonexistent-file-12345.html'
     ], { encoding: 'utf8' });
     const parsed = JSON.parse(out);

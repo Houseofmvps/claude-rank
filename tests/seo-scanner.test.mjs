@@ -5,8 +5,10 @@ import path from 'path';
 import fs from 'node:fs';
 import os from 'node:os';
 import { execFileSync } from 'child_process';
+import { fileURLToPath } from 'url';
 
-const FIXTURES = path.join(import.meta.dirname, 'fixtures');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES = path.join(__dirname, 'fixtures');
 
 describe('seo-scanner', () => {
   it('returns high score for good-seo fixture', () => {
@@ -93,7 +95,7 @@ describe('seo-scanner', () => {
 
   it('outputs valid JSON when run as CLI', () => {
     const out = execFileSync('node', [
-      path.join(import.meta.dirname, '..', 'tools', 'seo-scanner.mjs'),
+      path.join(__dirname, '..', 'tools', 'seo-scanner.mjs'),
       path.join(FIXTURES, 'good-seo-dir')
     ], { encoding: 'utf8' });
     const parsed = JSON.parse(out);

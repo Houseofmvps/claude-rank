@@ -1,5 +1,9 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 // We can't import compete() directly since it requires network access.
 // Instead, test the internal analysis functions by importing the module
@@ -160,7 +164,7 @@ describe('compete-scanner: CLI validation', () => {
     const path = await import('path');
     try {
       execFileSync('node', [
-        path.join(import.meta.dirname, '..', 'tools', 'compete-scanner.mjs'),
+        path.join(__dirname, '..', 'tools', 'compete-scanner.mjs'),
         'not-a-url',
       ], { encoding: 'utf8', stdio: 'pipe' });
       assert.fail('Should have exited with error');

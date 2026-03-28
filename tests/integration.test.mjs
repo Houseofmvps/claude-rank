@@ -3,9 +3,11 @@ import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'child_process';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const ROOT = path.join(import.meta.dirname, '..');
-const FIXTURES = path.join(import.meta.dirname, 'fixtures');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const ROOT = path.join(__dirname, '..');
+const FIXTURES = path.join(__dirname, 'fixtures');
 
 describe('integration', () => {
   it('all scanners produce valid JSON for good fixture', () => {

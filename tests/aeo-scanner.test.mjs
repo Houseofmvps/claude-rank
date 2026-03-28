@@ -3,8 +3,10 @@ import assert from 'node:assert/strict';
 import fs from 'fs';
 import { scanDirectory } from '../tools/aeo-scanner.mjs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const FIXTURES = path.join(import.meta.dirname, 'fixtures');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES = path.join(__dirname, 'fixtures');
 
 describe('aeo-scanner', () => {
   it('detects missing FAQPage schema', () => {

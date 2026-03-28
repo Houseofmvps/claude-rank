@@ -4,8 +4,10 @@ import { execFileSync } from 'child_process';
 import fs from 'fs';
 import { scanDirectory } from '../tools/geo-scanner.mjs';
 import path from 'path';
+import { fileURLToPath } from 'url';
 
-const FIXTURES = path.join(import.meta.dirname, 'fixtures');
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const FIXTURES = path.join(__dirname, 'fixtures');
 
 describe('geo-scanner', () => {
   it('returns high score for good-geo fixture', () => {
@@ -41,7 +43,7 @@ describe('geo-scanner', () => {
 
   it('outputs valid JSON when run as CLI', () => {
     const out = execFileSync('node', [
-      path.join(import.meta.dirname, '..', 'tools', 'geo-scanner.mjs'),
+      path.join(__dirname, '..', 'tools', 'geo-scanner.mjs'),
       path.join(FIXTURES, 'good-geo-dir')
     ], { encoding: 'utf8' });
     const parsed = JSON.parse(out);
@@ -171,7 +173,7 @@ describe('geo-scanner', () => {
     const EEAT_BASE_HTML = (body) => `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Test</title><meta name="description" content="Test description long enough."><link rel="canonical" href="https://example.com/test"></head><body><main>${body}</main></body></html>`;
 
     function makeTmpDir(name) {
-      const dir = path.join(import.meta.dirname, 'fixtures', `_eeat-${name}`);
+      const dir = path.join(__dirname, 'fixtures', `_eeat-${name}`);
       fs.mkdirSync(dir, { recursive: true });
       fs.writeFileSync(path.join(dir, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml');
       fs.writeFileSync(path.join(dir, 'llms.txt'), '# Test');
