@@ -26,6 +26,15 @@ const positional = args.filter((a, i) => {
 });
 const [command = 'scan', dir = '.'] = positional;
 
+// Reject empty string as target
+if (command !== 'help' && (dir === '' || dir.trim() === '')) {
+  console.error('No target directory or URL provided.\n');
+  console.error('Usage: claude-rank <command> <directory>');
+  console.error('       claude-rank <command> <url>\n');
+  console.error('Run "claude-rank help" for all options.');
+  process.exit(1);
+}
+
 const commands = {
   scan: '../tools/seo-scanner.mjs',
   geo: '../tools/geo-scanner.mjs',

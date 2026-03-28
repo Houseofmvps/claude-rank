@@ -69,4 +69,102 @@ describe('parseHtml', () => {
     assert.equal(state.hasFooter, true);
     assert.equal(state.hasArticle, true);
   });
+
+  // --- Main-content word count ---
+
+  it('tracks mainContentWordCount separately from total wordCount', () => {
+    const html = `<html><body>
+      <nav>Home About Contact Blog Products Services</nav>
+      <main><p>This is the actual main content of the page with enough words to test.</p></main>
+      <footer>Footer text copyright 2026 all rights reserved company name address</footer>
+    </body></html>`;
+    const state = parseHtml(html);
+    assert.ok(state.wordCount > state.mainContentWordCount,
+      `Total (${state.wordCount}) should exceed main (${state.mainContentWordCount})`);
+    assert.ok(state.mainContentWordCount > 0, 'mainContentWordCount should be > 0');
+  });
+
+  it('falls back to total wordCount when no <main> element exists', () => {
+    const html = '<html><body><p>Some content without main element here today now.</p></body></html>';
+    const state = parseHtml(html);
+    assert.equal(state.mainContentWordCount, state.wordCount);
+  });
+
+  it('counts words only inside <main> for mainContentWordCount', () => {
+    const html = `<html><body>
+      <header>Long header navigation with many words that should not count at all</header>
+      <main><p>Short main content.</p></main>
+      <aside>Sidebar content here too</aside>
+    </body></html>`;
+    const state = parseHtml(html);
+    assert.equal(state.mainContentWordCount, 3); // "Short main content."
+  });
+
+  // --- Viewport content capture ---
+
+  it('captures viewport content attribute', () => {
+    const html = '<html><head><meta name="viewport" content="width=device-width, initial-scale=1"></head></html>';
+    const state = parseHtml(html);
+    assert.equal(state.hasViewport, true);
+    assert.equal(state.viewportContent, 'width=device-width, initial-scale=1');
+  });
+
+  it('captures fixed-width viewport', () => {
+    const html = '<html><head><meta name="viewport" content="width=1024"></head></html>';
+    const state = parseHtml(html);
+    assert.equal(state.viewportContent, 'width=1024');
+  });
+
+  // --- Body text capture ---
+
+  it('exposes bodyText for keyword analysis', () => {
+    const html = '<html><body><p>keyword optimization content here</p></body></html>';
+    const state = parseHtml(html);
+    assert.ok(state.bodyText.includes('keyword'));
+    assert.ok(state.bodyText.includes('optimization'));
+  });
+
+  // --- Expanded analytics detection ---
+
+  it('detects Heap analytics', () => {
+    const html = '<html><body><script src="https://cdn.heapanalytics.com/js/heap-123.js"></script><p>Content</p></body></html>';
+    const state = parseHtml(html);
+    assert.equal(state.hasAnalytics, true);
+    assert.equal(state.analyticsProvider, 'heap');
+  });
+
+  it('detects Snowplow analytics', () => {
+    const html = '<html><body><script>snowplow("newTracker", "sp", "collector.example.com")</script><p>Content</p></body></html>';
+    const state = parseHtml(html);
+    assert.equal(state.hasAnalytics, true);
+    assert.equal(state.analyticsProvider, 'snowplow');
+  });
+
+  it('detects Intercom', () => {
+    const html = '<html><body><script src="https://widget.intercom.io/widget/abc123"></script><p>Content</p></body></html>';
+    const state = parseHtml(html);
+    assert.equal(state.hasAnalytics, true);
+    assert.equal(state.analyticsProvider, 'intercom');
+  });
+
+  it('detects Rudderstack', () => {
+    const html = '<html><body><script src="https://cdn.rudderlabs.com/v1.1/rudder-analytics.min.js"></script><p>Content</p></body></html>';
+    const state = parseHtml(html);
+    assert.equal(state.hasAnalytics, true);
+    assert.equal(state.analyticsProvider, 'rudderstack');
+  });
+
+  it('detects Matomo', () => {
+    const html = '<html><body><script src="https://cdn.matomo.cloud/example.matomo.cloud/matomo.js"></script><p>Content</p></body></html>';
+    const state = parseHtml(html);
+    assert.equal(state.hasAnalytics, true);
+    assert.equal(state.analyticsProvider, 'matomo');
+  });
+
+  it('detects Vercel Analytics', () => {
+    const html = '<html><body><script src="https://va.vercel-scripts.com/v1/script.js"></script><p>Content</p></body></html>';
+    const state = parseHtml(html);
+    assert.equal(state.hasAnalytics, true);
+    assert.equal(state.analyticsProvider, 'vercel-analytics');
+  });
 });

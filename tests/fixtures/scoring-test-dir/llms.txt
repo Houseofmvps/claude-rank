@@ -1,0 +1,5 @@
+# Test Product
+> A comprehensive testing solution
+
+## Docs
+- https://example.com/docs

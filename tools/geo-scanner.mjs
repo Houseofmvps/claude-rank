@@ -69,6 +69,16 @@ const RULES = {
 const QUESTION_WORDS = new Set([
   'what', 'how', 'why', 'when', 'where', 'who', 'which',
   'can', 'does', 'is', 'are', 'do', 'should', 'will',
+  'could', 'would', 'has', 'have', 'did', 'was', 'were',
+  'shall', 'may', 'might', 'need',
+]);
+
+// Marketing headers that start with question words but aren't real questions
+const MARKETING_HEADERS = new Set([
+  "what's new", "what we do", "what we offer", "what we build",
+  "how it works", "how we work", "how to get started",
+  "why us", "why choose us", "who we are", "where we are",
+  "is it time", "are you ready",
 ]);
 
 // ---------------------------------------------------------------------------
@@ -202,8 +212,10 @@ function extractSchemaTypes(jsonLdContent) {
  * @param {string} text
  */
 function isQuestionHeading(text) {
-  const firstWord = text.trim().split(/\s+/)[0] || '';
-  return QUESTION_WORDS.has(firstWord.toLowerCase());
+  const lower = text.toLowerCase().trim();
+  if (MARKETING_HEADERS.has(lower)) return false;
+  const firstWord = lower.split(/\s+/)[0] || '';
+  return QUESTION_WORDS.has(firstWord);
 }
 
 // ---------------------------------------------------------------------------
@@ -393,7 +405,7 @@ export function scanDirectory(rootDir) {
     pageCount++;
 
     totalJsonLdScripts += state.jsonLdScripts;
-    totalWordCount += state.wordCount;
+    totalWordCount += state.mainContentWordCount || state.wordCount;
 
     if (state.hasNoindex) anyHasNoindex = true;
     if (state.hasMain) anyHasMain = true;

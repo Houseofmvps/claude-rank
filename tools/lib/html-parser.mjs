@@ -13,17 +13,42 @@ import { checkFileSize } from './security.mjs';
 // ---------------------------------------------------------------------------
 
 const ANALYTICS_PATTERNS = [
+  // Major platforms
   { pattern: 'googletagmanager.com', provider: 'google-analytics' },
   { pattern: 'google-analytics.com', provider: 'google-analytics' },
   { pattern: 'plausible.io', provider: 'plausible' },
   { pattern: 'posthog.com', provider: 'posthog' },
   { pattern: 'amplitude.com', provider: 'amplitude' },
+  { pattern: 'cdn.amplitude.com', provider: 'amplitude' },
   { pattern: 'mixpanel.com', provider: 'mixpanel' },
   { pattern: 'segment.com', provider: 'segment' },
   { pattern: 'hotjar.com', provider: 'hotjar' },
   { pattern: 'clarity.ms', provider: 'clarity' },
   { pattern: 'usefathom.com', provider: 'fathom' },
   { pattern: 'umami.is', provider: 'umami' },
+  // Added — commonly used providers
+  { pattern: 'heapanalytics.com', provider: 'heap' },
+  { pattern: 'heap.io', provider: 'heap' },
+  { pattern: 'rudderlabs.com', provider: 'rudderstack' },
+  { pattern: 'rudderstack.com', provider: 'rudderstack' },
+  { pattern: 'mparticle.com', provider: 'mparticle' },
+  { pattern: 'intercom.io', provider: 'intercom' },
+  { pattern: 'widget.intercom.io', provider: 'intercom' },
+  { pattern: 'snowplow', provider: 'snowplow' },
+  { pattern: 'matomo', provider: 'matomo' },
+  { pattern: 'pirsch.io', provider: 'pirsch' },
+  { pattern: 'splitbee.io', provider: 'splitbee' },
+  { pattern: 'simple-analytics.com', provider: 'simple-analytics' },
+  { pattern: 'simpleanalytics.com', provider: 'simple-analytics' },
+  { pattern: 'va.vercel-scripts.com', provider: 'vercel-analytics' },
+  { pattern: 'vitals.vercel-insights.com', provider: 'vercel-analytics' },
+  { pattern: 'counter.dev', provider: 'counter' },
+  { pattern: 'goatcounter.com', provider: 'goatcounter' },
+  { pattern: 'newrelic.com', provider: 'new-relic' },
+  { pattern: 'nr-data.net', provider: 'new-relic' },
+  { pattern: 'fullstory.com', provider: 'fullstory' },
+  { pattern: 'logrocket.com', provider: 'logrocket' },
+  { pattern: 'logr-ingest.com', provider: 'logrocket' },
 ];
 
 // ---------------------------------------------------------------------------
@@ -96,6 +121,9 @@ function createPageState() {
 
     // Content
     wordCount: 0,
+    mainContentWordCount: 0,
+    bodyText: '',
+    viewportContent: '',
 
     // Scripts
     preloadLinks: [],
@@ -130,6 +158,8 @@ export function parseHtml(htmlString) {
   let currentScriptSrc = '';
   let inlineScriptBuffer = '';
   let bodyTextBuffer = '';
+  let mainTextBuffer = '';
+  let inMain = false;
 
   const parser = new Parser(
     {
@@ -166,6 +196,7 @@ export function parseHtml(htmlString) {
           // viewport
           if (nameLower === 'viewport') {
             state.hasViewport = true;
+            state.viewportContent = content;
           }
 
           // description
@@ -314,7 +345,7 @@ export function parseHtml(htmlString) {
         }
 
         // Semantic HTML
-        if (tag === 'main') { state.hasMain = true; return; }
+        if (tag === 'main') { state.hasMain = true; inMain = true; return; }
         if (tag === 'nav') { state.hasNav = true; return; }
         if (tag === 'footer') { state.hasFooter = true; return; }
         if (tag === 'article') { state.hasArticle = true; return; }
@@ -362,6 +393,9 @@ export function parseHtml(htmlString) {
         // Body text (skip script/style)
         if (inBody && !inScript && !inStyle) {
           bodyTextBuffer += text + ' ';
+          if (inMain) {
+            mainTextBuffer += text + ' ';
+          }
         }
       },
 
@@ -403,6 +437,11 @@ export function parseHtml(htmlString) {
           return;
         }
 
+        if (tag === 'main') {
+          inMain = false;
+          return;
+        }
+
         if (tag === 'body') {
           inBody = false;
           return;
@@ -435,6 +474,15 @@ export function parseHtml(htmlString) {
   const trimmed = bodyTextBuffer.trim();
   if (trimmed) {
     state.wordCount = trimmed.split(/\s+/).filter(Boolean).length;
+    state.bodyText = trimmed;
+  }
+
+  // Main-content word count (falls back to total if no <main> element)
+  const mainTrimmed = mainTextBuffer.trim();
+  if (mainTrimmed) {
+    state.mainContentWordCount = mainTrimmed.split(/\s+/).filter(Boolean).length;
+  } else {
+    state.mainContentWordCount = state.wordCount;
   }
 
   // Deduplicate JSON-LD content — text events fire once per script block

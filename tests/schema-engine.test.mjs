@@ -1,6 +1,11 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { execFileSync } from 'child_process';
+import fs from 'fs';
+import path from 'path';
 import { detectSchema, validateSchema, generateSchema, injectSchema } from '../tools/schema-engine.mjs';
+
+const FIXTURES = path.join(import.meta.dirname, 'fixtures');
 
 describe('detectSchema', () => {
   it('finds JSON-LD in HTML', () => {
@@ -104,5 +109,50 @@ describe('injectSchema', () => {
     const schema = { '@context': 'https://schema.org', '@type': 'Organization', name: 'Test' };
     const result = injectSchema(html, schema);
     assert.ok(result.includes('application/ld+json'));
+  });
+});
+
+describe('validate subcommand (CLI)', () => {
+  it('returns issues for invalid schema', () => {
+    const html = '<html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article"}</script></head><body></body></html>';
+    const tmpFile = path.join(FIXTURES, '_validate-test.html');
+    fs.writeFileSync(tmpFile, html);
+    try {
+      const out = execFileSync('node', [
+        path.join(import.meta.dirname, '..', 'tools', 'schema-engine.mjs'),
+        'validate', tmpFile
+      ], { encoding: 'utf8' });
+      const parsed = JSON.parse(out);
+      assert.ok(parsed.issues.length > 0, 'Should find missing required fields');
+      assert.ok(parsed.schemas.includes('Article'));
+    } finally {
+      fs.unlinkSync(tmpFile);
+    }
+  });
+
+  it('returns empty issues for valid schema', () => {
+    const html = '<html><head><script type="application/ld+json">{"@context":"https://schema.org","@type":"Organization","name":"Test","url":"https://test.com"}</script></head><body></body></html>';
+    const tmpFile = path.join(FIXTURES, '_validate-valid.html');
+    fs.writeFileSync(tmpFile, html);
+    try {
+      const out = execFileSync('node', [
+        path.join(import.meta.dirname, '..', 'tools', 'schema-engine.mjs'),
+        'validate', tmpFile
+      ], { encoding: 'utf8' });
+      const parsed = JSON.parse(out);
+      assert.equal(parsed.issues.length, 0);
+    } finally {
+      fs.unlinkSync(tmpFile);
+    }
+  });
+
+  it('handles non-existent file gracefully', () => {
+    const out = execFileSync('node', [
+      path.join(import.meta.dirname, '..', 'tools', 'schema-engine.mjs'),
+      'validate', '/tmp/nonexistent-file-12345.html'
+    ], { encoding: 'utf8' });
+    const parsed = JSON.parse(out);
+    assert.equal(parsed.schemas.length, 0);
+    assert.equal(parsed.issues.length, 0);
   });
 });

@@ -15,15 +15,8 @@ description: "Main orchestrator for claude-rank SEO/GEO/AEO toolkit. Routes to s
 | `/rank aeo [dir]` | rank-aeo | Answer engine optimization |
 | `/rank fix [dir]` | rank-fix | Auto-fix all findings |
 | `/rank schema [dir]` | rank-schema | Schema detect/validate/generate |
-| `/rank technical [dir]` | rank-technical | Technical SEO (Phase 2) |
-| `/rank content [dir]` | rank-content | E-E-A-T content analysis (Phase 2) |
-| `/rank speed [dir]` | rank-speed | Core Web Vitals (Phase 2) |
-| `/rank local [dir]` | rank-local | Local SEO (Phase 3) |
-| `/rank images [dir]` | rank-images | Image optimization (Phase 3) |
-| `/rank competitor [dir]` | rank-competitor | Competitive intelligence (Phase 4) |
-| `/rank keywords [dir]` | rank-keywords | Keyword research (Phase 4) |
-| `/rank report [dir]` | rank-report | Client report generation (Phase 5) |
-| `/rank plan [type]` | rank-plan | Strategic SEO roadmap (Phase 5) |
+
+*Future phases (not yet implemented): technical, content, speed, local, images, competitor, keywords, report, plan*
 
 ## Quick Health Check (bare /rank)
 

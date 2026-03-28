@@ -1,6 +1,7 @@
 import { findHtmlFiles } from './lib/html-parser.mjs';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync, statSync } from 'node:fs';
 import { resolve } from 'node:path';
+import { checkFileSize } from './lib/security.mjs';
 
 /**
  * Detect all JSON-LD schema blocks in an HTML string.
@@ -291,4 +292,23 @@ if (args[0] === 'detect' && args[1]) {
 
   const schema = generateSchema(type, data);
   console.log(JSON.stringify(schema, null, 2));
+} else if (args[0] === 'validate' && args[1]) {
+  const filePath = resolve(args[1]);
+  if (!existsSync(filePath)) {
+    console.log(JSON.stringify({ schemas: [], issues: [], file: args[1] }));
+    process.exit(0);
+  }
+  const sizeCheck = checkFileSize(filePath, statSync);
+  if (!sizeCheck.ok) {
+    console.log(JSON.stringify({ error: sizeCheck.reason }));
+    process.exit(1);
+  }
+  const content = readFileSync(filePath, 'utf8');
+  const schemas = detectSchema(content);
+  const allIssues = [];
+  for (const schema of schemas) {
+    const issues = validateSchema(schema.data);
+    allIssues.push(...issues.map(msg => ({ type: schema.type, issue: msg })));
+  }
+  console.log(JSON.stringify({ schemas: schemas.map(s => s.type), issues: allIssues, file: args[1] }));
 }

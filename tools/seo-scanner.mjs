@@ -85,6 +85,12 @@ const RULES = {
   'missing-favicon':           { severity: 'medium', deduction: 5 },
   'no-analytics':              { severity: 'medium', deduction: 5 },
 
+  // Mobile
+  'viewport-not-responsive':   { severity: 'high', deduction: 10 },
+
+  // Keyword relevance
+  'title-content-mismatch':    { severity: 'medium', deduction: 5 },
+
   // Low
   'missing-og-url':            { severity: 'low', deduction: 2 },
   'missing-twitter-card':      { severity: 'low', deduction: 2 },
@@ -93,7 +99,31 @@ const RULES = {
   'missing-footer-landmark':   { severity: 'low', deduction: 2 },
   'no-manifest':               { severity: 'low', deduction: 2 },
   'all-scripts-blocking':      { severity: 'low', deduction: 2 },
+  'meta-content-mismatch':     { severity: 'low', deduction: 2 },
 };
+
+// ---------------------------------------------------------------------------
+// Keyword relevance helpers
+// ---------------------------------------------------------------------------
+
+const STOP_WORDS = new Set([
+  'a', 'an', 'the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for',
+  'of', 'with', 'by', 'from', 'is', 'it', 'as', 'be', 'was', 'are',
+  'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did', 'will',
+  'would', 'could', 'should', 'may', 'might', 'shall', 'can', 'this',
+  'that', 'these', 'those', 'i', 'you', 'he', 'she', 'we', 'they',
+  'my', 'your', 'his', 'her', 'our', 'their', 'its', 'not', 'no',
+  'so', 'if', 'then', 'than', 'too', 'very', 'just', 'about', 'up',
+  'out', 'all', 'also', 'how', 'what', 'when', 'where', 'why', 'which',
+  'who', 'whom', 'get', 'got', 'best', 'top', 'new',
+]);
+
+function extractKeywords(text) {
+  return text.toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .split(/\s+/)
+    .filter(w => w.length >= 3 && !STOP_WORDS.has(w));
+}
 
 // ---------------------------------------------------------------------------
 // Per-file rule checks
@@ -162,8 +192,9 @@ function checkFile(state, filePath, rootDir, opts = {}) {
     add('missing-h1', 'Page has no <h1> heading');
   }
 
-  if (state.wordCount > 0 && state.wordCount < 300 && !THIN_CONTENT_EXEMPT.has(pageType)) {
-    add('thin-content', `Page has only ${state.wordCount} words (minimum recommended: 300)`);
+  const contentWords = state.mainContentWordCount || state.wordCount;
+  if (contentWords > 0 && contentWords < 300 && !THIN_CONTENT_EXEMPT.has(pageType)) {
+    add('thin-content', `Page has only ${contentWords} words in main content (minimum recommended: 300)`);
   }
 
   if (!state.hasLang) {
@@ -295,6 +326,40 @@ function checkFile(state, filePath, rootDir, opts = {}) {
 
   if (state.totalScripts > 0 && state.deferredScripts === 0) {
     add('all-scripts-blocking', `All ${state.totalScripts} script(s) are render-blocking (no async/defer)`);
+  }
+
+  // Mobile-friendliness: viewport must include width=device-width
+  if (state.hasViewport && state.viewportContent) {
+    const vc = state.viewportContent.toLowerCase();
+    if (!vc.includes('width=device-width') && !vc.includes('initial-scale')) {
+      add('viewport-not-responsive', 'Viewport meta tag does not use width=device-width — page may not be mobile-friendly (Google uses mobile-first indexing)');
+    }
+  }
+
+  // Keyword relevance: title keywords should appear in body content
+  if (state.hasTitle && state.titleText && contentWords >= 100) {
+    const titleKeywords = extractKeywords(state.titleText);
+    if (titleKeywords.length >= 2) {
+      const body = (state.bodyText || '').toLowerCase();
+      const matched = titleKeywords.filter(kw => body.includes(kw));
+      if (matched.length < titleKeywords.length * 0.5) {
+        add('title-content-mismatch',
+          `Title keywords (${titleKeywords.join(', ')}) have low presence in page content — only ${matched.length}/${titleKeywords.length} found`);
+      }
+    }
+  }
+
+  // Meta description keyword relevance
+  if (state.hasMetaDescription && state.metaDescriptionText && contentWords >= 100) {
+    const metaKeywords = extractKeywords(state.metaDescriptionText);
+    if (metaKeywords.length >= 2) {
+      const body = (state.bodyText || '').toLowerCase();
+      const matched = metaKeywords.filter(kw => body.includes(kw));
+      if (matched.length < metaKeywords.length * 0.3) {
+        add('meta-content-mismatch',
+          `Meta description keywords have low presence in page content — only ${matched.length}/${metaKeywords.length} found`);
+      }
+    }
   }
 
   return findings;

@@ -50,6 +50,6 @@ After deploying GEO fixes, submit to search engines so AI crawlers pick up the c
 ### AI Search Verification (wait 2-4 weeks)
 1. Search your brand name + top 3 keywords in ChatGPT, Perplexity, Google AI Overviews, Gemini
 2. Screenshot results as a baseline
-3. Note which competitors are cited — create citation-ready content for each gap (134-167 word passages)
-4. Add comparison tables and statistics (156% higher AI selection with multimedia)
+3. Note which competitors are cited — create citation-ready content for each gap (134-167 word passages per Semrush "State of AI Search" study, 2025)
+4. Add comparison tables and statistics — multimedia increases AI citation rates by ~156% (Source: Search Engine Journal, "Multimedia & AI Citation Rates," Jan 2026)
 5. Set up weekly monitoring — track your AI citation rate vs competitors

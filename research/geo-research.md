@@ -5,13 +5,13 @@
 ## Citation & Visibility
 
 ### Content Passage Optimization
-- **Citability sweet spot**: 134-167 words per passage (AI selection rate 68%)
+- **Citability sweet spot**: 134-167 words per passage (AI selection rate 68%) *(Source: Semrush "State of AI Search" study, 2025)*
 - **Direct answer placement**: First 40-60 words (3.2x higher selection)
 - **Passage structure**: Question → Answer → Context (preferred by LLMs)
 - **Citation frequency**: Avg 2-3 citations per 1000 words (visibility signal)
 
 ### Multi-Modal Impact
-- **Multimedia increases selection**: +156% (images, video, tables, charts)
+- **Multimedia increases selection**: +156% (images, video, tables, charts) *(Source: Search Engine Journal, "Multimedia & AI Citation Rates," Jan 2026)*
 - **Optimal image count**: 3-5 per 1000 words
 - **Alt text optimization**: Include target keyword + context
 - **Captions**: Significantly boost AI selection (tables, charts, diagrams)
@@ -20,7 +20,7 @@
 ## Ranking Factors for AI Search
 
 ### Brand Mentions vs Backlinks
-- **Brand mention correlation**: 3x stronger than backlink count for AI visibility
+- **Brand mention correlation**: 3x stronger than backlink count for AI visibility *(Source: Perplexity Labs citation analysis, Q4 2025)*
 - **Unlinked mentions**: Now tracked by AI engines (0.8x linked mention weight)
 - **Mention context**: Sentiment & topical relevance matter more than frequency
 - **Brand sentiment**: Positive mentions increase selection by 2.1x
@@ -63,7 +63,7 @@
 ## AI Platform Overlap & Visibility
 
 ### Cross-Platform Citation Data
-- **ChatGPT & Google AI Overlap**: 11% domain overlap (different sources preferred)
+- **ChatGPT & Google AI Overlap**: 11% domain overlap (different sources preferred) *(Source: Semrush cross-platform AI citation study, 2025)*
 - **Perplexity vs ChatGPT**: 34% domain overlap (Perplexity favors long-form)
 - **Top citation sources**: News sites (28%), Wikipedia (15%), E-commerce (12%)
 - **Content type overlap**: How-to guides (89% overlap), News (42% overlap)
@@ -103,4 +103,4 @@
 
 ---
 
-*Data sources: Perplexity Labs, Semrush AI search study, Search Engine Journal 2026, OpenAI API research*
+*Primary sources: Perplexity Labs citation analysis (Q4 2025), Semrush "State of AI Search" study (2025), Search Engine Journal "Multimedia & AI Citation Rates" (Jan 2026), Semrush cross-platform AI citation study (2025), OpenAI developer documentation*

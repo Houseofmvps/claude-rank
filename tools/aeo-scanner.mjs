@@ -36,13 +36,24 @@ const RULES = {
 // Helpers
 // ---------------------------------------------------------------------------
 
-const QUESTION_WORDS = /^(what|how|why|when|where|who|which|can|does|is|are|do|should|will)\b/i;
+const QUESTION_WORDS = /^(what|how|why|when|where|who|which|can|does|is|are|do|should|will|could|would|has|have|did|was|were|shall|may|might|need)\b/i;
+
+// Marketing headers that start with question words but aren't real questions
+const MARKETING_HEADERS = new Set([
+  "what's new", "what we do", "what we offer", "what we build",
+  "how it works", "how we work", "how to get started",
+  "why us", "why choose us", "who we are", "where we are",
+  "is it time", "are you ready",
+]);
 
 /**
  * Returns true if a heading text starts with a question word.
+ * Excludes known marketing headers that aren't real questions.
  */
 function isQuestionHeading(text) {
-  return QUESTION_WORDS.test(text.trim());
+  const lower = text.toLowerCase().trim();
+  if (MARKETING_HEADERS.has(lower)) return false;
+  return QUESTION_WORDS.test(lower);
 }
 
 /**
@@ -190,7 +201,7 @@ function analyzePage(filePath) {
     hasVoiceFriendlyPara,
     questionH2sWithNext,
     hasMissingDirectAnswer,
-    wordCount: state.wordCount,
+    wordCount: state.mainContentWordCount || state.wordCount,
     imgCount,
     // no snippet answers: question H2s exist but no paragraphs follow them
     noSnippetAnswers: questionH2s.length === 0 ||
