@@ -33,10 +33,23 @@ Present GEO findings grouped by:
 
 Re-run geo-scanner. Show before/after GEO score.
 
-## Phase 5: Advanced Guidance
+## Phase 5: Search Console Submission
 
-Advise user to:
-1. Search top 5 keywords in ChatGPT, Perplexity, Google AI Overviews
-2. Note which competitors are cited
-3. Create citation-ready content for each gap (134-167 word passages)
+After deploying GEO fixes, submit to search engines so AI crawlers pick up the changes:
+
+### Google Search Console
+1. **Resubmit sitemap** — Sitemaps → Resubmit `sitemap.xml` (triggers recrawl)
+2. **Request indexing** for pages where you unblocked AI bots or added schema — URL Inspection → Request Indexing
+3. **Check robots.txt** — Settings → Crawling → verify your updated robots.txt is live (AI bots unblocked)
+
+### Bing Webmaster Tools
+1. **Submit URLs** — URL Submission → submit pages with new schema/content structure
+2. **Verify robots.txt** — Bingbot feeds Microsoft Copilot and ChatGPT Browse — keeping it unblocked is essential
+3. **Enable IndexNow** — Near-instant indexing for Bing, Yandex, Seznam. Generate key at indexnow.org
+
+### AI Search Verification (wait 2-4 weeks)
+1. Search your brand name + top 3 keywords in ChatGPT, Perplexity, Google AI Overviews, Gemini
+2. Screenshot results as a baseline
+3. Note which competitors are cited — create citation-ready content for each gap (134-167 word passages)
 4. Add comparison tables and statistics (156% higher AI selection with multimedia)
+5. Set up weekly monitoring — track your AI citation rate vs competitors
