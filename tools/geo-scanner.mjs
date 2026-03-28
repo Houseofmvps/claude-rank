@@ -1,5 +1,5 @@
 /**
- * geo-scanner.mjs — GEO (Generative Engine Optimization) scanner with 34 rules.
+ * geo-scanner.mjs — GEO (Generative Engine Optimization) scanner with 39 rules.
  * Scans a directory for AI search engine optimization signals and returns a
  * structured findings + score report.
  *
@@ -68,6 +68,13 @@ const RULES = {
   'amazonbot-blocked':          { severity: 'low', deduction: 2 },
   'missing-date-modified-ai':   { severity: 'medium', deduction: 5 },
   'no-source-citations':        { severity: 'medium', deduction: 5 },
+
+  // E-E-A-T (Experience, Expertise, Authoritativeness, Trustworthiness)
+  'no-author-bio':              { severity: 'medium', deduction: 5 },
+  'no-credentials':             { severity: 'medium', deduction: 5 },
+  'no-about-author-link':       { severity: 'low', deduction: 2 },
+  'no-review-trust-signals':    { severity: 'low', deduction: 2 },
+  'no-external-authority-links': { severity: 'medium', deduction: 5 },
 };
 
 // ---------------------------------------------------------------------------
@@ -408,6 +415,12 @@ export function scanDirectory(rootDir) {
   let anyHasDateModified = false;
   let totalAuthoritativeCitations = 0;
 
+  // E-E-A-T tracking
+  let hasAuthorBio = false;
+  let hasCredentials = false;
+  let hasAboutAuthorLink = false;
+  let hasReviewTrustSignals = false;
+
   let scanIdx = 0;
   for (const filePath of htmlFiles) {
     scanIdx++;
@@ -528,6 +541,84 @@ export function scanDirectory(rootDir) {
           totalAuthoritativeCitations++;
         }
       } catch { /* invalid URL */ }
+    }
+
+    // E-E-A-T: Author bio detection
+    if (!hasAuthorBio) {
+      // Check JSON-LD Person with description or jobTitle
+      for (const jsonStr of state.jsonLdContent) {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const checkPerson = (obj) => {
+            if (!obj || typeof obj !== 'object') return false;
+            if (Array.isArray(obj)) return obj.some(checkPerson);
+            const t = obj['@type'];
+            if (t === 'Person' && (obj.description || obj.jobTitle)) return true;
+            return Object.values(obj).some(v => v && typeof v === 'object' ? checkPerson(v) : false);
+          };
+          if (checkPerson(parsed)) hasAuthorBio = true;
+        } catch { /* skip */ }
+      }
+      // Check HTML patterns
+      if (!hasAuthorBio) {
+        if (/class=["'][^"']*\b(author|bio)\b[^"']*["']/i.test(raw) ||
+            /rel=["']author["']/i.test(raw) ||
+            /\b(Written by|Author:|By\s+[A-Z][a-z]+)/i.test(raw)) {
+          hasAuthorBio = true;
+        }
+      }
+    }
+
+    // E-E-A-T: Credentials detection
+    if (!hasCredentials) {
+      // Check JSON-LD Person with credentials, jobTitle, alumniOf, award
+      for (const jsonStr of state.jsonLdContent) {
+        try {
+          const parsed = JSON.parse(jsonStr);
+          const checkCreds = (obj) => {
+            if (!obj || typeof obj !== 'object') return false;
+            if (Array.isArray(obj)) return obj.some(checkCreds);
+            const t = obj['@type'];
+            if (t === 'Person' && (obj.credentials || obj.jobTitle || obj.alumniOf || obj.award)) return true;
+            return Object.values(obj).some(v => v && typeof v === 'object' ? checkCreds(v) : false);
+          };
+          if (checkCreds(parsed)) hasCredentials = true;
+        } catch { /* skip */ }
+      }
+      // Check text patterns
+      if (!hasCredentials) {
+        if (/\b(PhD|Dr\.|certified|years of experience|expert in)\b/i.test(raw)) {
+          hasCredentials = true;
+        }
+      }
+    }
+
+    // E-E-A-T: About/author link detection
+    if (!hasAboutAuthorLink) {
+      for (const href of state.internalLinks) {
+        const lower = href.toLowerCase();
+        if (/\b(about|team|author|who-we-are)\b/.test(lower)) {
+          hasAboutAuthorLink = true;
+          break;
+        }
+      }
+    }
+
+    // E-E-A-T: Review/trust signals detection
+    if (!hasReviewTrustSignals) {
+      // Check for AggregateRating or Review schema
+      for (const jsonStr of state.jsonLdContent) {
+        if (/AggregateRating|Review/.test(jsonStr)) {
+          hasReviewTrustSignals = true;
+          break;
+        }
+      }
+      // Check text patterns
+      if (!hasReviewTrustSignals) {
+        if (/\b(testimonial|review|rated|stars|trusted by|customers)\b/i.test(raw)) {
+          hasReviewTrustSignals = true;
+        }
+      }
     }
   }
   if (htmlFiles.length > 5) process.stderr.write('\r\x1b[K');
@@ -682,23 +773,48 @@ export function scanDirectory(rootDir) {
     add('no-source-citations', 'No citations to authoritative sources (.edu, .gov, .org) found — AI engines trust content that references authoritative sources');
   }
 
+  // E-E-A-T rules
+  if (pageCount > 0 && !hasAuthorBio) {
+    add('no-author-bio', 'No author bio found — pages lack author name, role, or expertise signals (E-E-A-T)');
+  }
+
+  if (pageCount > 0 && !hasCredentials) {
+    add('no-credentials', 'No author credentials found — no job titles, certifications, or experience signals detected (E-E-A-T)');
+  }
+
+  if (pageCount > 0 && !hasAboutAuthorLink) {
+    add('no-about-author-link', 'No link to an about, team, or author page found — limits authoritativeness signals (E-E-A-T)');
+  }
+
+  if (pageCount > 0 && !hasReviewTrustSignals) {
+    add('no-review-trust-signals', 'No review or trust signals found — no testimonials, ratings, or trust badges detected (E-E-A-T)');
+  }
+
+  if (pageCount > 0 && totalAuthoritativeCitations === 0) {
+    add('no-external-authority-links', 'No outbound links to authoritative domains (.edu, .gov, .org) — citing authorities boosts E-E-A-T trust signals');
+  }
+
   // -------------------------------------------------------------------------
   // 5. Score calculation
   // -------------------------------------------------------------------------
 
+  // Deduct once per unique rule (consistent with SEO scorer)
+  const triggeredRules = new Set(findings.map(f => f.rule));
   let score = 100;
-  let critical = 0, high = 0, medium = 0, low = 0;
-
-  for (const finding of findings) {
-    const def = RULES[finding.rule];
-    score -= def.deduction;
-    if (def.severity === 'critical') critical++;
-    else if (def.severity === 'high') high++;
-    else if (def.severity === 'medium') medium++;
-    else if (def.severity === 'low') low++;
+  for (const rule of triggeredRules) {
+    const def = RULES[rule];
+    if (def) score -= def.deduction;
   }
-
   score = Math.max(0, score);
+
+  let critical = 0, high = 0, medium = 0, low = 0;
+  for (const finding of findings) {
+    const sev = RULES[finding.rule]?.severity;
+    if (sev === 'critical') critical++;
+    else if (sev === 'high') high++;
+    else if (sev === 'medium') medium++;
+    else if (sev === 'low') low++;
+  }
 
   return {
     files_scanned: filesScanned,

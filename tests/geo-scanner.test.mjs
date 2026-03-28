@@ -164,4 +164,107 @@ describe('geo-scanner', () => {
       }
     });
   });
+
+  // --- E-E-A-T rule tests ---
+
+  describe('E-E-A-T rules', () => {
+    const EEAT_BASE_HTML = (body) => `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Test</title><meta name="description" content="Test description long enough."><link rel="canonical" href="https://example.com/test"></head><body><main>${body}</main></body></html>`;
+
+    function makeTmpDir(name) {
+      const dir = path.join(import.meta.dirname, 'fixtures', `_eeat-${name}`);
+      fs.mkdirSync(dir, { recursive: true });
+      fs.writeFileSync(path.join(dir, 'robots.txt'), 'User-agent: *\nAllow: /\nSitemap: https://example.com/sitemap.xml');
+      fs.writeFileSync(path.join(dir, 'llms.txt'), '# Test');
+      return dir;
+    }
+
+    function cleanup(dir) {
+      fs.rmSync(dir, { recursive: true, force: true });
+    }
+
+    it('detects no-author-bio when page lacks author signals', () => {
+      const dir = makeTmpDir('no-bio');
+      fs.writeFileSync(path.join(dir, 'index.html'), EEAT_BASE_HTML('<h1>Test</h1><p>Some content without any author info.</p>'));
+      try {
+        const result = scanDirectory(dir);
+        assert.ok(result.findings.some(f => f.rule === 'no-author-bio'),
+          'Should detect missing author bio');
+      } finally {
+        cleanup(dir);
+      }
+    });
+
+    it('does NOT fire no-author-bio when JSON-LD Person has jobTitle', () => {
+      const dir = makeTmpDir('has-bio');
+      const html = `<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Test</title><meta name="description" content="Test desc."><link rel="canonical" href="https://example.com"><script type="application/ld+json">{"@context":"https://schema.org","@type":"Article","author":{"@type":"Person","name":"Jane","jobTitle":"Engineer","description":"Senior engineer with 10 years experience"}}</script></head><body><main><h1>Test</h1><p>Written by Jane, a certified expert in the field.</p><a href="/about">About us</a></main></body></html>`;
+      fs.writeFileSync(path.join(dir, 'index.html'), html);
+      try {
+        const result = scanDirectory(dir);
+        assert.ok(!result.findings.some(f => f.rule === 'no-author-bio'),
+          'Should NOT flag no-author-bio when Person schema has jobTitle');
+      } finally {
+        cleanup(dir);
+      }
+    });
+
+    it('detects no-credentials when page lacks expertise signals', () => {
+      const dir = makeTmpDir('no-creds');
+      fs.writeFileSync(path.join(dir, 'index.html'), EEAT_BASE_HTML('<h1>Test</h1><p>Some generic content here.</p>'));
+      try {
+        const result = scanDirectory(dir);
+        assert.ok(result.findings.some(f => f.rule === 'no-credentials'),
+          'Should detect missing credentials');
+      } finally {
+        cleanup(dir);
+      }
+    });
+
+    it('does NOT fire no-credentials when text has expertise patterns', () => {
+      const dir = makeTmpDir('has-creds');
+      fs.writeFileSync(path.join(dir, 'index.html'), EEAT_BASE_HTML('<h1>Test</h1><p>Dr. Smith has 15 years of experience in the field and is certified in advanced analytics.</p>'));
+      try {
+        const result = scanDirectory(dir);
+        assert.ok(!result.findings.some(f => f.rule === 'no-credentials'),
+          'Should NOT flag no-credentials when text mentions Dr./certified/years of experience');
+      } finally {
+        cleanup(dir);
+      }
+    });
+
+    it('detects no-about-author-link when no internal about/team links', () => {
+      const dir = makeTmpDir('no-about-link');
+      fs.writeFileSync(path.join(dir, 'index.html'), EEAT_BASE_HTML('<h1>Test</h1><p>Content here.</p><a href="/pricing">Pricing</a>'));
+      try {
+        const result = scanDirectory(dir);
+        assert.ok(result.findings.some(f => f.rule === 'no-about-author-link'),
+          'Should detect missing about/author link');
+      } finally {
+        cleanup(dir);
+      }
+    });
+
+    it('detects no-review-trust-signals when page has no social proof', () => {
+      const dir = makeTmpDir('no-trust');
+      fs.writeFileSync(path.join(dir, 'index.html'), EEAT_BASE_HTML('<h1>Test</h1><p>Plain content with no reviews or testimonials.</p>'));
+      try {
+        const result = scanDirectory(dir);
+        assert.ok(result.findings.some(f => f.rule === 'no-review-trust-signals'),
+          'Should detect missing review/trust signals');
+      } finally {
+        cleanup(dir);
+      }
+    });
+
+    it('detects no-external-authority-links when no .edu/.gov/.org links', () => {
+      const dir = makeTmpDir('no-authority');
+      fs.writeFileSync(path.join(dir, 'index.html'), EEAT_BASE_HTML('<h1>Test</h1><p>Content here.</p><a href="https://example.com">Example</a>'));
+      try {
+        const result = scanDirectory(dir);
+        assert.ok(result.findings.some(f => f.rule === 'no-external-authority-links'),
+          'Should detect missing authoritative external links');
+      } finally {
+        cleanup(dir);
+      }
+    });
+  });
 });

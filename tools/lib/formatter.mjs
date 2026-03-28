@@ -141,6 +141,16 @@ const FIX_HINTS = {
   'meta-content-mismatch':     'Align page content with meta description keywords',
   'duplicate-title':           'Make each page title unique',
   'duplicate-meta-description':'Make each meta description unique',
+  'broken-internal-link':      'Fix or remove the broken link — check the href path',
+
+  // Content analysis
+  'no-hub-page':               'Create a hub/pillar page linking to all related content pages',
+  'orphan-content':            'Add internal links to orphan pages from related content',
+  'thin-pages':                'Expand content to 300+ words with relevant, useful information',
+  'low-readability':           'Simplify language — shorter sentences, simpler words',
+  'high-passive-voice':        'Rewrite passive sentences in active voice',
+  'wall-of-text':              'Break paragraphs into 3-4 sentences max',
+  'duplicate-content':         'Consolidate duplicate pages or differentiate their content',
 
   // GEO
   'missing-robots-txt':        'Create robots.txt allowing AI crawlers',
@@ -168,6 +178,9 @@ const FIX_HINTS = {
   'no-lazy-loading':             'Add loading="lazy" to below-the-fold images',
   'no-fetchpriority':            'Add fetchpriority="high" to the LCP image for faster rendering',
   'mixed-content-risk':          'Change http:// resources to https:// — mixed content is blocked by browsers',
+  'no-responsive-images':        'Add srcset and sizes attributes to <img> tags for responsive images',
+  'no-modern-image-format':      'Convert images to WebP or AVIF format for smaller file sizes',
+  'no-image-sizes':              'Add sizes attribute alongside srcset for proper responsive behavior',
 
   // Security
   'http-only-links':             'Change http:// links to https:// — HTTP links leak referrer data',
@@ -190,6 +203,13 @@ const FIX_HINTS = {
   'no-numbered-steps':         'Add numbered/ordered lists for featured snippets',
   'no-voice-friendly-content': 'Add 20-35 word concise answers for voice search',
   'no-paa-patterns':           'Add "People Also Ask" style Q&A sections',
+
+  // E-E-A-T
+  'no-author-bio':             'Add author bios with name, role, and expertise to content pages',
+  'no-credentials':            'Include author credentials (job title, certifications, experience)',
+  'no-about-author-link':      'Link to an about/team page to establish authoritativeness',
+  'no-review-trust-signals':   'Add testimonials, reviews, or trust badges',
+  'no-external-authority-links':'Cite authoritative sources (.edu, .gov, research papers)',
 };
 
 // ---------------------------------------------------------------------------
@@ -1099,6 +1119,234 @@ export function formatSecurityReport(result) {
     lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues to harden your site`);
   }
   lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank scan .')} to check overall SEO health`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Schema report
+// ---------------------------------------------------------------------------
+
+// ---------------------------------------------------------------------------
+// Keyword Clustering report
+// ---------------------------------------------------------------------------
+
+export function formatKeywordReport(result) {
+  if (result.skipped) {
+    return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
+  }
+
+  const lines = [];
+
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Keyword Clustering')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+  lines.push(`  ${c.dim('Pages analyzed:')} ${result.summary.totalPages}    ${c.dim('Clusters:')} ${result.summary.totalClusters}    ${c.dim('Gaps:')} ${result.summary.contentGaps}`);
+  lines.push('');
+
+  // Primary keywords per page
+  if (result.primaryKeywords && result.primaryKeywords.length > 0) {
+    lines.push(`  ${c.bold('Primary Keywords')}`);
+    lines.push('');
+    lines.push(`  ${pad(c.bold('File'), 36)} ${pad(c.bold('Primary Keyword'), 22)} ${c.bold('Score')}`);
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    for (const pk of result.primaryKeywords.slice(0, 15)) {
+      const file = pk.file || 'unknown';
+      const kw = pk.primaryKeyword || '-';
+      const score = pk.score != null ? String(pk.score) : '-';
+      lines.push(`  ${pad(c.dim(file), 36)} ${pad(kw, 22)} ${score}`);
+    }
+    if (result.primaryKeywords.length > 15) {
+      lines.push(`  ${c.dim(`  ... +${result.primaryKeywords.length - 15} more pages`)}`);
+    }
+  }
+
+  // Topic clusters
+  if (result.clusters && result.clusters.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.cyan('Topic Clusters'))} ${c.dim(`(${result.clusters.length})`)}`);
+    lines.push('');
+    for (const cluster of result.clusters.slice(0, 10)) {
+      lines.push(`  ${c.cyan('\u25CF')} ${c.bold(cluster.theme)}`);
+      lines.push(`    ${c.dim('Keywords:')} ${cluster.keywords.slice(0, 6).join(', ')}`);
+      lines.push(`    ${c.dim('Pages:')} ${cluster.pages.join(', ')}`);
+      if (cluster.suggestedPillar) {
+        lines.push(`    ${c.cyan('\u2192')} ${c.cyan(cluster.suggestedPillar)}`);
+      }
+      lines.push('');
+    }
+    if (result.clusters.length > 10) {
+      lines.push(`  ${c.dim(`  ... +${result.clusters.length - 10} more clusters`)}`);
+    }
+  }
+
+  // Keyword cannibalization
+  if (result.cannibalization && result.cannibalization.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.red('\u2718 Keyword Cannibalization'))} ${c.dim(`(${result.cannibalization.length} issues)`)}`);
+    lines.push('');
+    for (const issue of result.cannibalization.slice(0, 10)) {
+      lines.push(`  ${c.red('\u25CB')} ${c.bold(issue.keyword)}`);
+      lines.push(`    ${c.dim('Competing pages:')} ${issue.pages.join(', ')}`);
+      lines.push(`    ${c.yellow('\u2192')} ${c.yellow(issue.recommendation)}`);
+      lines.push('');
+    }
+    if (result.cannibalization.length > 10) {
+      lines.push(`  ${c.dim(`  ... +${result.cannibalization.length - 10} more`)}`);
+    }
+  }
+
+  // Content gaps
+  if (result.contentGaps && result.contentGaps.length > 0) {
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold(c.yellow('Content Gaps'))} ${c.dim(`(${result.contentGaps.length} topics need more content)`)}`);
+    lines.push('');
+    for (const gap of result.contentGaps.slice(0, 10)) {
+      lines.push(`  ${c.yellow('\u25CB')} ${c.bold(gap.keyword)} ${c.dim(`(score: ${gap.score})`)}`);
+      lines.push(`    ${c.dim('Only on:')} ${gap.currentPage}`);
+      lines.push(`    ${c.cyan('\u2192')} ${c.cyan(gap.recommendation)}`);
+      lines.push('');
+    }
+    if (result.contentGaps.length > 10) {
+      lines.push(`  ${c.dim(`  ... +${result.contentGaps.length - 10} more gaps`)}`);
+    }
+  }
+
+  // Next steps
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Next Steps')}`);
+  lines.push('');
+  if (result.cannibalization && result.cannibalization.length > 0) {
+    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${result.cannibalization.length} cannibalization`)} issues — consolidate or differentiate competing pages`);
+  }
+  if (result.contentGaps && result.contentGaps.length > 0) {
+    lines.push(`  ${c.yellow('\u2192')} Fill ${c.bold(`${result.contentGaps.length}`)} content gaps with supporting articles`);
+  }
+  if (result.clusters && result.clusters.length > 0) {
+    lines.push(`  ${c.cyan('\u2192')} Build pillar pages for ${c.bold(`${result.clusters.length}`)} topic clusters`);
+  }
+  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank content .')} for readability and duplicate analysis`);
+  lines.push('');
+
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Content Brief report
+// ---------------------------------------------------------------------------
+
+export function formatBriefReport(result) {
+  if (result.skipped) {
+    return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
+  }
+
+  const lines = [];
+
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Content Brief')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+  lines.push(`  ${c.bold('Target Keyword:')} ${c.cyan(result.targetKeyword)}`);
+  lines.push(`  ${c.dim('Pages scanned:')} ${result.analysis.totalPagesScanned}    ${c.dim('Related pages:')} ${result.analysis.relatedPagesFound}`);
+
+  // Suggested title
+  lines.push('');
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Suggested Title (H1)')}`);
+  lines.push('');
+  lines.push(`  ${c.green(result.suggestedTitle)}`);
+
+  // Word count target
+  lines.push('');
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Word Count Target')}`);
+  lines.push('');
+  lines.push(`  ${c.dim('Target:')} ${c.bold(String(result.targetWordCount))} words ${c.dim(`(avg competitor: ${result.avgCompetitorWordCount})`)}`);
+
+  // Suggested outline
+  if (result.suggestedOutline.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Suggested H2 Outline')} ${c.dim(`(${result.suggestedOutline.length} sections)`)}`);
+    lines.push('');
+    for (let i = 0; i < result.suggestedOutline.length; i++) {
+      lines.push(`  ${c.cyan(`${i + 1}.`)} ${result.suggestedOutline[i]}`);
+    }
+  }
+
+  // Questions to answer
+  if (result.questionsToAnswer.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Questions to Answer')} ${c.dim(`(${result.questionsToAnswer.length})`)}`);
+    lines.push('');
+    for (const q of result.questionsToAnswer) {
+      lines.push(`  ${c.yellow('?')} ${q}`);
+    }
+  }
+
+  // Internal linking opportunities
+  if (result.internalLinkingOpportunities.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Internal Linking Opportunities')} ${c.dim(`(${result.internalLinkingOpportunities.length})`)}`);
+    lines.push('');
+    for (const link of result.internalLinkingOpportunities.slice(0, 8)) {
+      const icon = link.direction === 'link-to' ? c.green('\u2192') : c.blue('\u2190');
+      const dirLabel = link.direction === 'link-to' ? c.dim('link to') : c.dim('link from');
+      lines.push(`  ${icon} ${dirLabel} ${c.bold(link.title || link.file)}`);
+      lines.push(`     ${c.dim(link.reason)}`);
+    }
+    if (result.internalLinkingOpportunities.length > 8) {
+      lines.push(`  ${c.dim(`  ... +${result.internalLinkingOpportunities.length - 8} more`)}`);
+    }
+  }
+
+  // Related keywords
+  if (result.relatedKeywords.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Related Keywords')} ${c.dim(`(${result.relatedKeywords.length})`)}`);
+    lines.push('');
+    const kwLine = result.relatedKeywords.map(k => `${k.word} ${c.dim(`(${k.frequency})`)}`).join('  ');
+    lines.push(`  ${kwLine}`);
+  }
+
+  // Content gaps
+  if (result.contentGaps.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('Content Gaps')} ${c.dim(`(${result.contentGaps.length} topics)`)}`);
+    lines.push('');
+    for (const gap of result.contentGaps.slice(0, 8)) {
+      lines.push(`  ${c.red('\u25CB')} ${gap.topic} ${c.dim(`covered by ${gap.coverageRatio} pages`)}`);
+    }
+  }
+
+  // GEO optimization tips
+  if (result.geoOptimizationTips.length > 0) {
+    lines.push('');
+    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(`  ${c.bold('GEO Optimization Tips')}`);
+    lines.push('');
+    for (const tip of result.geoOptimizationTips) {
+      const priorityColor = tip.priority === 'high' ? c.red : c.yellow;
+      lines.push(`  ${priorityColor('\u2022')} ${c.bold(tip.tip)}`);
+      lines.push(`     ${c.dim(tip.reason)}`);
+    }
+  }
+
+  // Next steps
+  lines.push('');
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push(`  ${c.bold('Next Steps')}`);
+  lines.push('');
+  lines.push(`  ${c.cyan('1.')} Write content following this brief`);
+  lines.push(`  ${c.cyan('2.')} Run ${c.bold('claude-rank scan .')} after publishing to verify SEO`);
+  lines.push(`  ${c.cyan('3.')} Run ${c.bold('claude-rank citability .')} to check AI citation readiness`);
   lines.push('');
 
   return lines.join('\n');

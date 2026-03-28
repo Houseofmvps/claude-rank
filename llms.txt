@@ -1,21 +1,45 @@
-# claude-rank
+# claude-rank v1.9.0
 
-claude-rank is a free, open-source Claude Code plugin for comprehensive search optimization — covering traditional SEO, Generative Engine Optimization (GEO), and Answer Engine Optimization (AEO).
+claude-rank is a free, open-source Claude Code plugin with 170+ rules across 10 scanners for comprehensive search optimization, AI citability, keyword analysis, content briefs, performance, and security auditing.
 
-## Capabilities
+## Scanners
 
-- **SEO Audit**: Meta tags, title/description length, heading hierarchy, canonical URLs, robots.txt, sitemap.xml, structured data (JSON-LD), Open Graph, Twitter Cards, hreflang, page speed signals
-- **GEO Audit**: AI-crawler accessibility (GPTBot, ClaudeBot, PerplexityBot), llms.txt presence, structured content density, citation-friendly formatting, entity clarity, factual density scoring
-- **AEO Audit**: Featured snippet eligibility, FAQ schema, HowTo schema, speakable schema, People Also Ask optimization, concise answer blocks, question-keyword targeting
-- **Auto-fix**: Generates corrected HTML/JSON-LD patches for detected issues
-- **Scoring**: 0-100 scores for SEO, GEO, AEO, and composite — with severity-weighted deductions
+- **SEO Scanner** (50 rules): Meta tags, title/description validation, heading hierarchy, canonical URLs, robots.txt, sitemap.xml, structured data (JSON-LD), Open Graph, Twitter Cards, hreflang, image alt text, internal linking, broken link detection, page speed signals
+- **GEO Scanner** (45 rules): AI-crawler accessibility (GPTBot, ClaudeBot, PerplexityBot), llms.txt presence, structured content density, citation-friendly formatting, entity clarity, factual density scoring, knowledge graph readiness, E-E-A-T scoring (author bio, credentials, trust signals)
+- **AEO Scanner** (12 rules): Featured snippet eligibility, FAQ schema, HowTo schema, speakable schema, People Also Ask optimization, concise answer blocks, question-keyword targeting
+- **AI Citability Scorer** (7 dimensions): Measures how likely AI models are to cite your content across authority, uniqueness, structure, freshness, depth, attribution, and accessibility
+- **Content Intelligence**: Readability analysis, duplicate detection, thin content, orphan pages, hub page detection, topic clustering, internal linking suggestions
+- **Keyword Clustering**: TF-IDF keyword extraction, topic clusters, keyword cannibalization detection, content gaps, pillar page suggestions
+- **Content Brief Generator**: SEO-optimized writing briefs with suggested title, word count target, H2 outline, questions to answer, internal linking opportunities, related keywords, GEO tips
+- **Performance Scanner** (16 rules): Render-blocking resources, image optimization (srcset, WebP/AVIF), CLS risk, font loading, resource hints, lazy loading, mixed content
+- **Vertical SEO Scanner** (20 rules): Industry-specific schema validation (e-commerce, local business) with auto-detection
+- **Security Scanner** (15 rules): HTTPS enforcement, CSP, X-Frame-Options, referrer policy, permissions policy, mixed content, SRI, inline event handlers, iframe security
+
+## Features
+
+- **Competitive X-Ray**: 50+ tech stack detection patterns — identify frameworks, CDNs, analytics, CMS, and hosting used by any site
+- **Auto-fix generators**: Generates corrected robots.txt, sitemap.xml, llms.txt, and JSON-LD patches for detected issues
+- **Score tracking**: 0-100 scoring with severity-weighted deductions (critical -20, high -10, medium -5, low -2) and persistent audit history
+- **HTML report export**: Visual audit reports for sharing with teams or clients
+- **CI/CD threshold mode**: Set minimum score thresholds and fail builds that don't meet them
+- **Multi-page URL crawling**: Crawl and audit multiple pages from a single domain
+- **15 CLI commands**: Full command-line interface for all scanners and utilities
+
+## Scoring
+
+- All scores: 0-100 (higher is better)
+- Deductions are per unique rule (not per finding) — consistent across all scanners
+- Separate scores for SEO, GEO, AEO, AI Citability, Performance, Vertical SEO, Security, and Content Intelligence
+- Composite overall score combining all dimensions
 
 ## Terminology
+
 - GEO = Generative Engine Optimization (NOT geographic) — optimizing for AI search engines like Perplexity, ChatGPT, Gemini
 - AEO = Answer Engine Optimization — optimizing for featured snippets, voice search, and direct answer surfaces
 - SEO = Traditional Search Engine Optimization — Google/Bing crawlability, indexability, on-page signals
 
 ## Links
+
 - GitHub: https://github.com/Houseofmvps/claude-rank
-- npm: https://www.npmjs.com/package/claude-rank
+- npm: https://www.npmjs.com/package/@houseofmvps/claude-rank
 - Author: https://houseofmvps.com

@@ -1,28 +1,46 @@
 ---
 name: rank-audit
-description: Full SEO/GEO/AEO audit with auto-fix. Scans, reports, fixes, and verifies.
+description: Full SEO/GEO/AEO/Citability/Content/Performance/Vertical/Security audit with auto-fix. Scans, reports, fixes, and verifies.
 ---
 
 # Full Audit
 
-Comprehensive search optimization audit. Finds issues AND fixes them.
+Comprehensive search optimization audit across 8 dimensions. Finds issues AND fixes them.
 
 ## Phase 1: Parallel Scan
 
-Run all three scanners:
+Run all eight scanners:
 ```bash
 node ${CLAUDE_PLUGIN_ROOT}/tools/seo-scanner.mjs <project-directory>
 node ${CLAUDE_PLUGIN_ROOT}/tools/geo-scanner.mjs <project-directory>
 node ${CLAUDE_PLUGIN_ROOT}/tools/aeo-scanner.mjs <project-directory>
+node ${CLAUDE_PLUGIN_ROOT}/tools/citability-scorer.mjs <project-directory>
+node ${CLAUDE_PLUGIN_ROOT}/tools/content-analyzer.mjs <project-directory>
+node ${CLAUDE_PLUGIN_ROOT}/tools/perf-scanner.mjs <project-directory>
+node ${CLAUDE_PLUGIN_ROOT}/tools/vertical-scanner.mjs <project-directory>
+node ${CLAUDE_PLUGIN_ROOT}/tools/security-scanner.mjs <project-directory>
 ```
 
 Parse JSON output from each for findings and scores.
 
 ## Phase 2: Report
 
-Present findings grouped by category (SEO / GEO / AEO) with severity.
-Show scores table: SEO, GEO, AEO, Overall Rank Score.
-Show summary: X critical, Y high, Z medium, W low.
+Present findings grouped by all 8 categories with severity.
+
+Show scores table:
+| Category    | Score |
+|-------------|-------|
+| SEO         | --    |
+| GEO         | --    |
+| AEO         | --    |
+| Citability  | --    |
+| Content     | --    |
+| Performance | --    |
+| Vertical    | --    |
+| Security    | --    |
+| **Overall** | --    |
+
+Show summary: X critical, Y high, Z medium, W low across all categories.
 
 ## Phase 3: Auto-Fix
 
@@ -49,9 +67,35 @@ For each finding, apply the appropriate fix:
 - Missing speakable → add speakable schema for key content sections
 - Snippet optimization → restructure answers to 40-60 word direct answers
 
+**Performance fixes**:
+- Missing image dimensions → add `width` and `height` attributes to all `<img>` tags
+- Render-blocking scripts → add `async` or `defer` to third-party `<script>` tags
+- Font display issues → add `font-display: swap` to `@font-face` declarations
+- Lazy loading → add `loading="lazy"` to below-fold images
+- LCP priority → add `fetchpriority="high"` to the LCP image (hero/above-fold)
+- Missing preconnect → add `<link rel="preconnect">` hints for third-party origins (fonts, CDNs, analytics)
+
+**Security fixes**:
+- Missing CSP → add `<meta http-equiv="Content-Security-Policy" content="...">` in `<head>`
+- Missing referrer policy → add `<meta name="referrer" content="strict-origin-when-cross-origin">`
+- Unsafe target="_blank" → add `rel="noopener noreferrer"` to all `target="_blank"` links
+- Unsandboxed iframes → add `sandbox` attribute to `<iframe>` elements
+- Mixed content → fix `http://` URLs to `https://` in src, href, and content attributes
+
+**Content fixes**:
+- Long paragraphs → break up paragraphs longer than 150 words into smaller chunks
+- Complex sentences → simplify sentences with Flesch-Kincaid grade level > 12
+- Passive voice → rewrite passive voice constructions to active voice
+
+**Vertical fixes**:
+- Missing Product schema → add Product JSON-LD for e-commerce product pages
+- Missing LocalBusiness schema → add LocalBusiness JSON-LD with business details
+- Missing NAP data → add Name, Address, Phone in structured data and visible on page
+- Missing opening hours → add `openingHoursSpecification` to LocalBusiness schema
+
 ## Phase 4: Verify
 
-Re-run all three scanners. Show before/after score comparison.
+Re-run all eight scanners. Show before/after score comparison for each category.
 
 ## Phase 5: Save History
 
@@ -59,6 +103,11 @@ Re-run all three scanners. Show before/after score comparison.
 node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> seo <score>
 node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> geo <score>
 node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> aeo <score>
+node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> citability <score>
+node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> content <score>
+node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> performance <score>
+node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> vertical <score>
+node ${CLAUDE_PLUGIN_ROOT}/tools/audit-history.mjs save <dir> security <score>
 ```
 
 ## Phase 6: Content Strategy
@@ -75,92 +124,41 @@ Guide link building: create link-worthy assets, guest posting, broken link build
 
 ## Phase 8: Search Console Action Plan
 
-After fixing issues, guide the user through submitting their improved site to search engines. This is the critical bridge between "audit complete" and "actually ranking."
+After fixing issues, guide the user through submitting their improved site to search engines.
 
 ### Google Search Console (GSC)
 
-1. **Submit Sitemap**
-   - Go to [Google Search Console](https://search.google.com/search-console)
-   - Select your property → Sitemaps → Enter `sitemap.xml` → Submit
-   - If sitemap was just generated by `/rank fix`, confirm the file is deployed first
-
-2. **Request Indexing for Money Pages**
-   - Go to URL Inspection → Paste each high-priority page URL
-   - Click "Request Indexing" for pages that were fixed (new title, meta description, schema added)
-   - Priority order for indexing requests:
-     - Homepage
-     - Pricing / signup page
-     - Top landing pages (highest revenue/conversion)
-     - Blog posts targeting competitive keywords
-   - Google allows ~10-12 indexing requests per day — prioritize your money pages
-
-3. **Check Index Coverage**
-   - Go to Pages → review "Not indexed" list
-   - "Crawled - currently not indexed" → page needs content improvements or more internal links
-   - "Discovered - currently not indexed" → page needs stronger internal links pointing to it
-   - Verify any `noindex` pages found by scanner are intentional
-
-4. **Validate Robots.txt**
-   - Go to Settings → Crawling → Open robots.txt report
-   - Verify updated robots.txt (AI bots unblocked) is live and valid
-   - Test specific URLs to confirm they're crawlable
-
-5. **Check Rich Results**
-   - Go to Enhancements → review each schema type (FAQ, HowTo, Product, etc.)
-   - If `/rank fix` generated new JSON-LD, check for validation errors here
-   - Use [Rich Results Test](https://search.google.com/test/rich-results) to test individual pages
-   - Common issues: missing `image` field in Article, missing `price` in Product
-
-6. **Monitor Core Web Vitals**
-   - Go to Experience → Core Web Vitals
-   - Note any "Poor" or "Needs Improvement" URLs — these directly affect rankings
-   - Focus on: LCP (Largest Contentful Paint), CLS (Cumulative Layout Shift), INP (Interaction to Next Paint)
+1. **Submit Sitemap** — GSC → Sitemaps → Enter `sitemap.xml` → Submit
+2. **Request Indexing for Money Pages** — URL Inspection → paste each fixed page → Request Indexing (10-12/day limit, prioritize homepage, pricing, top landing pages)
+3. **Check Index Coverage** — Pages → review "Not indexed" list. "Crawled - currently not indexed" = needs content/links. "Discovered - currently not indexed" = needs internal links.
+4. **Validate Robots.txt** — Settings → Crawling → verify AI bots are unblocked
+5. **Check Rich Results** — Enhancements → review schema types. Test with [Rich Results Test](https://search.google.com/test/rich-results).
+6. **Monitor Core Web Vitals** — Experience → Core Web Vitals → fix "Poor" URLs (LCP, CLS, INP)
 
 ### Bing Webmaster Tools
 
-1. **Submit Sitemap**
-   - Go to [Bing Webmaster Tools](https://www.bing.com/webmasters)
-   - Configure Sitemaps → Submit your sitemap.xml URL
-   - Bing also reads the `Sitemap:` directive in robots.txt (already added by `/rank fix`)
-
-2. **Submit URLs for Fast Indexing**
-   - Go to URL Submission → submit your top 10 money pages
-   - Bing allows up to 10,000 URL submissions per day (far more generous than Google)
-   - Submit ALL pages that had SEO fixes applied
-
-3. **Enable IndexNow** (instant indexing)
-   - Bing supports [IndexNow](https://www.indexnow.org/) for near-instant indexing
-   - Generate an API key at indexnow.org → place key file at your domain root
-   - If using Next.js/WordPress, install IndexNow plugin for automatic ping on publish
-   - This feeds into Bing, Yandex, and Seznam simultaneously
-
-4. **Verify Robots.txt**
-   - Go to Configure My Site → Block URLs → Robots.txt Tester
-   - Important: Bingbot feeds into Microsoft Copilot and ChatGPT Browse — keeping it unblocked is critical for AI visibility
+1. **Submit Sitemap** — Configure Sitemaps → submit sitemap.xml URL
+2. **Submit URLs** — URL Submission → submit top pages (10,000/day limit)
+3. **Enable IndexNow** — Generate key at indexnow.org → place key file at domain root. Feeds Bing, Yandex, Seznam.
+4. **Verify Robots.txt** — Configure My Site → Block URLs → Robots.txt Tester. Bingbot feeds Copilot and ChatGPT Browse.
 
 ### AI Search Verification
 
-After deploying fixes, verify your site is visible to AI search engines:
-
-1. **Test AI Visibility** (wait 2-4 weeks after robots.txt changes)
-   - Search your brand name + top 3 keywords in:
-     - ChatGPT (chat.openai.com)
-     - Perplexity (perplexity.ai)
-     - Google Gemini (gemini.google.com)
-     - Google AI Overviews (google.com — check the AI summary box)
-   - Screenshot results as baseline for tracking improvement
-
-2. **Verify llms.txt**
-   - Visit `https://yourdomain.com/llms.txt` — confirm it returns content
-   - Check that it accurately describes your product and links to key pages
-
-3. **Monitor AI Citations Weekly**
-   - Search your niche keywords in Perplexity and ChatGPT every week
-   - Track which pages get cited vs competitors
-   - Focus content improvements on topics where competitors are cited but you're not
-   - Add comparison tables, statistics, and direct definitions to boost citation probability
+1. **Test AI Visibility** (2-4 weeks after deploy) — search brand + keywords in ChatGPT, Perplexity, Gemini, Google AI Overviews
+2. **Verify llms.txt** — confirm `https://yourdomain.com/llms.txt` returns content
+3. **Monitor AI Citations Weekly** — track which pages get cited vs competitors in Perplexity and ChatGPT
 
 ## Phase 9: Next Steps
 
-Recommend which `/rank` sub-commands to run next based on lowest scores.
-Present the user with a prioritized action checklist they can track.
+Recommend which `/claude-rank` sub-commands to run next based on lowest scores. Prioritize by score:
+
+- If **SEO < 60**, run `/claude-rank:rank-seo` for detailed on-page analysis
+- If **GEO < 60**, run `/claude-rank:rank-geo` for AI visibility deep-dive
+- If **AEO < 60**, run `/claude-rank:rank-aeo` for snippet and voice optimization
+- If **Citability < 50**, run `/claude-rank:rank-citability` for detailed per-page citation breakdown across all 7 dimensions
+- If **Content < 50**, run `/claude-rank:rank-content` for readability analysis and thin page identification
+- If **Performance < 50**, run `/claude-rank:rank-performance` for CLS/LCP/blocking resource analysis
+- If **Vertical < 50**, run `/claude-rank:rank-vertical` for industry-specific schema and optimization
+- If **Security < 50**, run `/claude-rank:rank-security` for header analysis and CSP configuration
+
+Present the user with a prioritized action checklist ordered by impact (lowest scores first).

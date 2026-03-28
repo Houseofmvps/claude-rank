@@ -386,10 +386,12 @@ export function scanDirectory(rootDir) {
     });
   }
 
-  // --- Scoring ---
+  // --- Scoring (deduct once per unique rule, consistent with SEO scorer) ---
+  const triggeredRules = new Set(findings.map(f => f.rule));
   let score = 100;
-  for (const finding of findings) {
-    score -= RULES[finding.rule].deduction;
+  for (const rule of triggeredRules) {
+    const def = RULES[rule];
+    if (def) score -= def.deduction;
   }
   score = Math.max(0, score);
 

@@ -1,6 +1,6 @@
 {
   "name": "@houseofmvps/claude-rank",
-  "version": "1.8.0",
+  "version": "1.9.0",
   "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. Audit, fix, and dominate search — traditional and AI.",
   "type": "module",
   "bin": {
@@ -22,7 +22,14 @@
     "test": "node --test tests/*.test.mjs",
     "scan": "node tools/seo-scanner.mjs",
     "geo": "node tools/geo-scanner.mjs",
-    "aeo": "node tools/aeo-scanner.mjs"
+    "aeo": "node tools/aeo-scanner.mjs",
+    "citability": "node tools/citability-scorer.mjs",
+    "content": "node tools/content-analyzer.mjs",
+    "keyword": "node bin/claude-rank.mjs keyword",
+    "brief": "node bin/claude-rank.mjs brief",
+    "perf": "node tools/perf-scanner.mjs",
+    "vertical": "node tools/vertical-scanner.mjs",
+    "security": "node tools/security-scanner.mjs"
   },
   "keywords": [
     "seo",

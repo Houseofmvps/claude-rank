@@ -61,6 +61,7 @@ const RULES = {
   'duplicate-meta-description':{ severity: 'high', deduction: 10 },
   'canonical-conflict':        { severity: 'high', deduction: 10 },
   'orphan-page':               { severity: 'high', deduction: 10 },
+  'broken-internal-link':      { severity: 'high', deduction: 10 },
   'no-internal-links':         { severity: 'high', deduction: 10 },
   'missing-lang':              { severity: 'high', deduction: 10 },
 
@@ -525,6 +526,58 @@ function buildLinkedSet(allStates) {
 }
 
 /**
+ * Check for broken internal links across all pages.
+ * Runs for both single-page and multi-page sites.
+ */
+function checkBrokenLinks(allStates, rootDir) {
+  const findings = [];
+  const SKIP_PREFIXES = ['#', 'mailto:', 'tel:', 'javascript:'];
+
+  for (const { filePath, state } of allStates) {
+    const rel = path.relative(rootDir, filePath);
+    for (const href of state.internalLinks) {
+      // Skip anchors, mailto, tel, javascript
+      if (SKIP_PREFIXES.some(p => href.startsWith(p))) continue;
+      // Skip external links (should not be in internalLinks, but be safe)
+      if (href.startsWith('http://') || href.startsWith('https://')) continue;
+
+      // Resolve the href to a filesystem path
+      let resolved;
+      if (href.startsWith('/')) {
+        // Absolute path from root
+        resolved = path.join(rootDir, href);
+      } else {
+        // Relative path from current file's directory
+        resolved = path.resolve(path.dirname(filePath), href);
+      }
+
+      // Strip trailing slash for directory check
+      const cleanResolved = resolved.replace(/\/$/, '');
+
+      // Check if the target exists:
+      // 1. Exact file
+      // 2. As .html file (e.g. /about -> about.html)
+      // 3. As directory with index.html (e.g. /about -> about/index.html)
+      const exists =
+        fileExists(cleanResolved) ||
+        fileExists(cleanResolved + '.html') ||
+        fileExists(path.join(cleanResolved, 'index.html'));
+
+      if (!exists) {
+        findings.push({
+          rule: 'broken-internal-link',
+          severity: RULES['broken-internal-link'].severity,
+          file: rel,
+          message: `Broken internal link "${href}" — target file not found`,
+        });
+      }
+    }
+  }
+
+  return findings;
+}
+
+/**
  * Run cross-page checks. Returns array of finding objects.
  */
 function crossPageChecks(allStates, rootDir) {
@@ -764,6 +817,9 @@ export function scanDirectory(rootDir) {
   // Run cross-page checks
   const crossFindings = multiPage ? crossPageChecks(allStates, absRoot) : [];
 
+  // Broken link detection runs for all sites (single-page and multi-page)
+  const brokenLinkFindings = checkBrokenLinks(allStates, absRoot);
+
   // --- Phase 1: Project-level checks ---
   const projectFindings = [];
 
@@ -791,7 +847,7 @@ export function scanDirectory(rootDir) {
     });
   }
 
-  const allFindings = [...perFileFindings, ...crossFindings, ...projectFindings];
+  const allFindings = [...perFileFindings, ...crossFindings, ...brokenLinkFindings, ...projectFindings];
 
   // Score
   const seoScore = calculateScore(allFindings);

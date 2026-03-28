@@ -100,6 +100,10 @@ function createPageState() {
     // Images
     imagesWithoutAlt: 0,
     imagesWithoutDimensions: 0,
+    imagesWithoutSrcset: 0,
+    imageFormats: [],
+    decorativeImages: 0,
+    imagesWithSrcsetNoSizes: 0,
 
     // Semantic HTML
     hasMain: false,
@@ -395,11 +399,41 @@ export function parseHtml(htmlString) {
           if (alt === undefined || alt === null) {
             state.imagesWithoutAlt++;
           }
+          // Track intentionally decorative images (alt="" is valid per WCAG)
+          if (alt === '') {
+            state.decorativeImages++;
+          }
           if (!width || !height) {
             state.imagesWithoutDimensions++;
           }
 
           state.imageCount++;
+
+          // Parse image format from src extension
+          const imgSrc = attribs.src || '';
+          const extMatch = imgSrc.match(/\.(\w+)(?:\?.*)?$/);
+          if (extMatch) {
+            const fmt = extMatch[1].toLowerCase();
+            if (['jpg', 'jpeg', 'png', 'gif', 'webp', 'avif', 'svg'].includes(fmt)) {
+              const normalized = fmt === 'jpeg' ? 'jpg' : fmt;
+              if (!state.imageFormats.includes(normalized)) {
+                state.imageFormats.push(normalized);
+              }
+            }
+          }
+
+          // Track srcset presence (skip SVGs and tiny icons)
+          const isSvg = imgSrc.endsWith('.svg') || imgSrc.includes('.svg?');
+          const isIcon = (width && parseInt(width, 10) <= 32) || (height && parseInt(height, 10) <= 32);
+          if (!isSvg && !isIcon) {
+            if (!attribs.srcset) {
+              state.imagesWithoutSrcset++;
+            } else if (!attribs.sizes) {
+              // Has srcset but no sizes attribute
+              state.imagesWithSrcsetNoSizes++;
+            }
+          }
+
           if ((attribs.loading || '').toLowerCase() === 'lazy') {
             state.hasLazyImages = true;
           }
@@ -407,7 +441,6 @@ export function parseHtml(htmlString) {
             state.hasFetchPriority = true;
           }
           // Mixed content check for img src
-          const imgSrc = attribs.src || '';
           if (imgSrc.startsWith('http://')) {
             state.httpResources.push(imgSrc);
           }

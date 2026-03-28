@@ -24,6 +24,11 @@ const RULES = {
   'no-fetchpriority':         { severity: 'medium', deduction: 5 },
   'mixed-content-risk':       { severity: 'medium', deduction: 5 },
 
+  // Image optimization
+  'no-responsive-images':     { severity: 'medium', deduction: 5 },
+  'no-modern-image-format':   { severity: 'medium', deduction: 5 },
+  'no-image-sizes':           { severity: 'low', deduction: 2 },
+
   // Low (-2)
   'no-preconnect':            { severity: 'low', deduction: 2 },
   'missing-meta-viewport':    { severity: 'low', deduction: 2 },
@@ -56,6 +61,10 @@ export function scanDirectory(rootDir) {
   let hasAnyResourceHints = false;
   let hasAnyMixedContent = false;
   let hasViewport = false;
+  let totalImagesWithoutSrcset = 0;
+  let totalImagesWithSrcsetNoSizes = 0;
+  let allImageFormats = new Set();
+  let hasAnySrcset = false;
 
   function add(rule, message) {
     if (firedRules.has(rule)) return;
@@ -81,6 +90,15 @@ export function scanDirectory(rootDir) {
 
     if (state.externalScriptDomains) {
       for (const d of state.externalScriptDomains) totalExternalDomains.add(d);
+    }
+
+    totalImagesWithoutSrcset += state.imagesWithoutSrcset || 0;
+    totalImagesWithSrcsetNoSizes += state.imagesWithSrcsetNoSizes || 0;
+    if (state.imageFormats) {
+      for (const fmt of state.imageFormats) allImageFormats.add(fmt);
+    }
+    if (state.imagesWithoutSrcset !== undefined && state.imageCount > state.imagesWithoutSrcset) {
+      hasAnySrcset = true;
     }
 
     if (state.hasLazyImages) hasAnyLazyLoad = true;
@@ -144,6 +162,19 @@ export function scanDirectory(rootDir) {
 
   if (!hasViewport) {
     add('missing-meta-viewport', 'No viewport meta tag — page will not render correctly on mobile devices');
+  }
+
+  // Image optimization rules
+  if (totalImages > 3 && !hasAnySrcset) {
+    add('no-responsive-images', `${totalImagesWithoutSrcset} images missing srcset — add srcset and sizes for responsive images`);
+  }
+
+  if (totalImages > 0 && allImageFormats.size > 0 && !allImageFormats.has('webp') && !allImageFormats.has('avif')) {
+    add('no-modern-image-format', `Only legacy formats detected (${[...allImageFormats].join(', ')}) — convert to WebP or AVIF for smaller file sizes`);
+  }
+
+  if (totalImagesWithSrcsetNoSizes > 0) {
+    add('no-image-sizes', `${totalImagesWithSrcsetNoSizes} images have srcset but no sizes attribute — add sizes for proper responsive behavior`);
   }
 
   // Score

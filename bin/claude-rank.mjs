@@ -42,6 +42,8 @@ const commands = {
   schema: '../tools/schema-engine.mjs',
   citability: '../tools/citability-scorer.mjs',
   content: '../tools/content-analyzer.mjs',
+  keyword: '../tools/content-analyzer.mjs',
+  brief: '../tools/brief-generator.mjs',
   perf: '../tools/perf-scanner.mjs',
   vertical: '../tools/vertical-scanner.mjs',
   security: '../tools/security-scanner.mjs',
@@ -58,6 +60,8 @@ Commands:
   aeo         Run AEO (answer engine) scanner
   citability  Score AI citability (7-dimension analysis)
   content     Content quality analysis (readability, duplicates, linking)
+  keyword     Keyword clustering, cannibalization detection, content gaps
+  brief       Generate a content brief for a target keyword
   perf        Performance scanner (images, CSS, JS, blocking resources)
   vertical    Vertical-specific checks (e-commerce, local business)
   security    Security header and vulnerability scanner
@@ -89,6 +93,7 @@ Examples:
   claude-rank scan ./site --json
   claude-rank scan ./site --report html
   claude-rank scan ./site --threshold 80
+  claude-rank brief ./site "seo optimization"
   claude-rank scan . --report html --threshold 80
 `);
   process.exit(0);
@@ -180,6 +185,8 @@ const {
   formatSchemaReport,
   formatCitabilityReport,
   formatContentReport,
+  formatKeywordReport,
+  formatBriefReport,
   formatPerfReport,
   formatVerticalReport,
   formatSecurityReport,
@@ -192,6 +199,8 @@ const formatters = {
   schema: formatSchemaReport,
   citability: formatCitabilityReport,
   content: formatContentReport,
+  keyword: formatKeywordReport,
+  brief: formatBriefReport,
   perf: formatPerfReport,
   vertical: formatVerticalReport,
   security: formatSecurityReport,
@@ -250,13 +259,23 @@ if (isUrl) {
     const seoMod = await import(new URL('../tools/seo-scanner.mjs', import.meta.url));
     const geoMod = await import(new URL('../tools/geo-scanner.mjs', import.meta.url));
     const aeoMod = await import(new URL('../tools/aeo-scanner.mjs', import.meta.url));
+    const citabilityMod = await import(new URL('../tools/citability-scorer.mjs', import.meta.url));
+    const contentMod = await import(new URL('../tools/content-analyzer.mjs', import.meta.url));
+    const perfMod = await import(new URL('../tools/perf-scanner.mjs', import.meta.url));
+    const verticalMod = await import(new URL('../tools/vertical-scanner.mjs', import.meta.url));
+    const securityMod = await import(new URL('../tools/security-scanner.mjs', import.meta.url));
 
     const seo = seoMod.scanDirectory(targetDir);
     const geo = geoMod.scanDirectory(targetDir);
     const aeo = aeoMod.scanDirectory(targetDir);
+    const citability = citabilityMod.scanDirectory(targetDir);
+    const content = contentMod.analyzeDirectory(targetDir);
+    const perf = perfMod.scanDirectory(targetDir);
+    const vertical = verticalMod.scanDirectory(targetDir);
+    const security = securityMod.scanDirectory(targetDir);
 
     const html = generateHtmlReport({
-      seo, geo, aeo,
+      seo, geo, aeo, citability, content, perf, vertical, security,
       target: dir,
       timestamp: new Date().toISOString(),
     });
@@ -269,6 +288,11 @@ if (isUrl) {
     console.log(formatSeoReport(seo));
     console.log(formatGeoReport(geo));
     console.log(formatAeoReport(aeo));
+    if (citability && !citability.skipped) console.log(formatCitabilityReport(citability));
+    if (content && !content.skipped) console.log(formatContentReport(content));
+    if (perf && !perf.skipped) console.log(formatPerfReport(perf));
+    if (vertical && !vertical.skipped) console.log(formatVerticalReport(vertical));
+    if (security && !security.skipped) console.log(formatSecurityReport(security));
 
     // Check threshold against the primary (SEO) score
     if (thresholdFlag != null) {
@@ -297,9 +321,25 @@ if (isUrl) {
     } else {
       console.log(formatSchemaReport(results));
     }
+  } else if (command === 'brief') {
+    const briefKeyword = positional[2] || '';
+    if (!briefKeyword) {
+      console.error('The brief command requires a target keyword.');
+      console.error('Usage: claude-rank brief <directory> "<keyword>"');
+      process.exit(1);
+    }
+    const mod = await import(new URL(toolPath, import.meta.url));
+    const result = mod.generateBrief(targetDir, briefKeyword);
+    if (jsonFlag) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatBriefReport(result));
+    }
   } else {
     const mod = await import(new URL(toolPath, import.meta.url));
-    const result = command === 'content' ? mod.analyzeDirectory(targetDir) : mod.scanDirectory(targetDir);
+    const result = command === 'content' ? mod.analyzeDirectory(targetDir)
+      : command === 'keyword' ? mod.analyzeKeywords(targetDir)
+      : mod.scanDirectory(targetDir);
     if (jsonFlag) {
       console.log(JSON.stringify(result, null, 2));
     } else {
@@ -308,7 +348,7 @@ if (isUrl) {
 
     // Check threshold
     if (thresholdFlag != null) {
-      const scoreKey = command === 'scan' ? 'seo' : command === 'citability' ? 'citability' : command === 'perf' ? 'performance' : command === 'content' ? null : command;
+      const scoreKey = command === 'scan' ? 'seo' : command === 'citability' ? 'citability' : command === 'perf' ? 'performance' : (command === 'content' || command === 'keyword') ? null : command;
       if (scoreKey === null) {
         // content scanner has no single score — skip threshold check
       } else {

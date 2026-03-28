@@ -167,4 +167,20 @@ describe('parseHtml', () => {
     assert.equal(state.hasAnalytics, true);
     assert.equal(state.analyticsProvider, 'vercel-analytics');
   });
+
+  // --- Image optimization tracking ---
+
+  it('tracks alt="" as decorativeImages, not imagesWithoutAlt', () => {
+    const html = `<html><body>
+      <img src="divider.png" alt="" width="100" height="2">
+      <img src="spacer.gif" alt="" width="1" height="1">
+      <img src="hero.jpg" alt="Hero image" width="800" height="600">
+      <img src="broken.jpg" width="200" height="200">
+    </body></html>`;
+    const state = parseHtml(html);
+    // alt="" is decorative, not missing
+    assert.equal(state.decorativeImages, 2, 'Should count 2 decorative images with alt=""');
+    // Only the last image (no alt attribute at all) counts as missing
+    assert.equal(state.imagesWithoutAlt, 1, 'Only truly missing alt should be counted');
+  });
 });

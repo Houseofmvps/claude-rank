@@ -4,6 +4,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import os from 'node:os';
 import { scanDirectory } from '../tools/perf-scanner.mjs';
+import { parseHtml } from '../tools/lib/html-parser.mjs';
 
 function makeTmpDir() {
   return fs.mkdtempSync(path.join(os.tmpdir(), 'perf-test-'));
@@ -239,6 +240,95 @@ describe('perf-scanner', () => {
         assert.ok(f.rule && f.rule.length > 0, 'Finding must have a rule');
         assert.ok(f.message && f.message.length > 0, 'Finding must have a message');
       }
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  // --- Image optimization rules ---
+
+  it('detects no-responsive-images when >3 images lack srcset', () => {
+    const dir = makeTmpDir();
+    writeHtml(dir, 'index.html',
+      `<!DOCTYPE html><html><head><title>No Srcset</title></head><body>
+        <img src="a.jpg" width="400" height="300" alt="A">
+        <img src="b.jpg" width="400" height="300" alt="B">
+        <img src="c.jpg" width="400" height="300" alt="C">
+        <img src="d.jpg" width="400" height="300" alt="D">
+      </body></html>`);
+    try {
+      const result = scanDirectory(dir);
+      const finding = result.findings.find(f => f.rule === 'no-responsive-images');
+      assert.ok(finding, 'Should detect missing srcset on images');
+      assert.equal(finding.severity, 'medium');
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('detects no-modern-image-format when only jpg/png used', () => {
+    const dir = makeTmpDir();
+    writeHtml(dir, 'index.html',
+      `<!DOCTYPE html><html><head><title>Legacy Formats</title></head><body>
+        <img src="photo1.jpg" width="400" height="300" alt="Photo 1">
+        <img src="photo2.png" width="400" height="300" alt="Photo 2">
+      </body></html>`);
+    try {
+      const result = scanDirectory(dir);
+      const finding = result.findings.find(f => f.rule === 'no-modern-image-format');
+      assert.ok(finding, 'Should detect legacy-only image formats');
+      assert.equal(finding.severity, 'medium');
+      assert.ok(finding.message.includes('jpg'), 'Message should mention detected formats');
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('does not fire image rules for properly optimized images (srcset + webp)', () => {
+    const dir = makeTmpDir();
+    writeHtml(dir, 'index.html',
+      `<!DOCTYPE html><html><head>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <title>Optimized Images</title>
+        <link rel="preconnect" href="https://cdn.example.com">
+        <link rel="preload" href="/hero.webp" as="image">
+      </head><body>
+        <img src="/hero.webp" srcset="/hero-400.webp 400w, /hero-800.webp 800w" sizes="(max-width: 600px) 400px, 800px" width="800" height="600" alt="Hero" fetchpriority="high">
+        <img src="/thumb1.webp" srcset="/thumb1-200.webp 200w, /thumb1-400.webp 400w" sizes="200px" width="200" height="150" alt="Thumb 1" loading="lazy">
+        <img src="/thumb2.webp" srcset="/thumb2-200.webp 200w, /thumb2-400.webp 400w" sizes="200px" width="200" height="150" alt="Thumb 2" loading="lazy">
+        <img src="/thumb3.webp" srcset="/thumb3-200.webp 200w, /thumb3-400.webp 400w" sizes="200px" width="200" height="150" alt="Thumb 3" loading="lazy">
+      </body></html>`);
+    try {
+      const result = scanDirectory(dir);
+      const responsiveFinding = result.findings.find(f => f.rule === 'no-responsive-images');
+      const formatFinding = result.findings.find(f => f.rule === 'no-modern-image-format');
+      const sizesFinding = result.findings.find(f => f.rule === 'no-image-sizes');
+      assert.equal(responsiveFinding, undefined, 'Should NOT flag no-responsive-images when srcset present');
+      assert.equal(formatFinding, undefined, 'Should NOT flag no-modern-image-format when webp used');
+      assert.equal(sizesFinding, undefined, 'Should NOT flag no-image-sizes when sizes present');
+    } finally {
+      fs.rmSync(dir, { recursive: true });
+    }
+  });
+
+  it('does not flag decorative images (alt="") as missing alt', () => {
+    const dir = makeTmpDir();
+    writeHtml(dir, 'index.html',
+      `<!DOCTYPE html><html><head><title>Decorative</title></head><body>
+        <img src="divider.png" alt="" width="100" height="2">
+        <img src="spacer.gif" alt="" width="1" height="1">
+        <img src="hero.jpg" alt="Hero" width="800" height="600">
+      </body></html>`);
+    try {
+      const result = scanDirectory(dir);
+      // The images-no-dimensions rule should NOT fire since all have dimensions
+      const dimFinding = result.findings.find(f => f.rule === 'images-no-dimensions');
+      assert.equal(dimFinding, undefined, 'All images have dimensions, should not flag');
+      // Verify via the parser that decorative images are not counted as missing alt
+      const content = fs.readFileSync(path.join(dir, 'index.html'), 'utf8');
+      const state = parseHtml(content);
+      assert.equal(state.imagesWithoutAlt, 0, 'alt="" should NOT be counted as missing alt');
+      assert.equal(state.decorativeImages, 2, 'Should count 2 decorative images');
     } finally {
       fs.rmSync(dir, { recursive: true });
     }
