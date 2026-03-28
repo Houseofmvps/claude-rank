@@ -5,13 +5,13 @@
     "email": "houseofmvps2024@gmail.com"
   },
   "metadata": {
-    "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. 80+ rules, auto-fix, GSC/Bing action plans."
+    "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. 170+ rules, auto-fix, GSC/Bing action plans."
   },
   "plugins": [
     {
       "name": "claude-rank",
-      "description": "SEO/GEO/AEO audit + auto-fix + Core Web Vitals + schema validation + GSC/Bing action plans",
-      "version": "1.5.0",
+      "description": "SEO/GEO/AEO audit + auto-fix + keyword clustering + content briefs + E-E-A-T + Core Web Vitals + schema validation",
+      "version": "1.9.0",
       "source": "./",
       "author": {
         "name": "Houseofmvps",

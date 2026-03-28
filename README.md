@@ -110,14 +110,15 @@ Quick Wins — Close These Gaps:
 
 ### Use as a Claude Code Plugin (recommended)
 
-claude-rank works as a full Claude Code plugin with skills, agents, and slash commands. In any Claude Code session, run:
+claude-rank works as a full Claude Code plugin with skills, agents, and slash commands.
 
+**Option A — Install from GitHub (recommended):**
 ```
 /plugin marketplace add Houseofmvps/claude-rank
 /plugin install claude-rank@Houseofmvps-claude-rank
 ```
 
-Or clone and add locally:
+**Option B — Install from a local clone:**
 ```bash
 git clone https://github.com/Houseofmvps/claude-rank.git
 ```
