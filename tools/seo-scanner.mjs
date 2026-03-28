@@ -541,14 +541,23 @@ function checkBrokenLinks(allStates, rootDir) {
       // Skip external links (should not be in internalLinks, but be safe)
       if (href.startsWith('http://') || href.startsWith('https://')) continue;
 
+      // Strip query string and hash fragment before resolving
+      let cleanHref = href.split('?')[0].split('#')[0];
+
+      // After stripping, if nothing remains or it's just "/" it's a valid root link
+      if (!cleanHref || cleanHref === '/') continue;
+
+      // If the original href was like /#section (root + hash), skip — it's an in-page anchor
+      if (href.startsWith('/#')) continue;
+
       // Resolve the href to a filesystem path
       let resolved;
-      if (href.startsWith('/')) {
+      if (cleanHref.startsWith('/')) {
         // Absolute path from root
-        resolved = path.join(rootDir, href);
+        resolved = path.join(rootDir, cleanHref);
       } else {
         // Relative path from current file's directory
-        resolved = path.resolve(path.dirname(filePath), href);
+        resolved = path.resolve(path.dirname(filePath), cleanHref);
       }
 
       // Strip trailing slash for directory check
@@ -558,6 +567,7 @@ function checkBrokenLinks(allStates, rootDir) {
       // 1. Exact file
       // 2. As .html file (e.g. /about -> about.html)
       // 3. As directory with index.html (e.g. /about -> about/index.html)
+      // 4. As directory with trailing slash (e.g. /about/ -> about/index.html)
       const exists =
         fileExists(cleanResolved) ||
         fileExists(cleanResolved + '.html') ||

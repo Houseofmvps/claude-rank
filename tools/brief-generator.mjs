@@ -197,6 +197,34 @@ export function generateBrief(rootDir, targetKeyword) {
     .sort((a, b) => (h2Frequency.get(b.toLowerCase().trim()) || 0) - (h2Frequency.get(a.toLowerCase().trim()) || 0))
     .slice(0, 15);
 
+  // Generate a smart outline that covers key angles
+  const smartOutline = [];
+  const coveredAngles = new Set();
+
+  // 1. Always start with a definition/overview section
+  smartOutline.push(`What Is ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}?`);
+  coveredAngles.add('definition');
+
+  // 2. Add most common H2s from related pages (proven topics)
+  for (const h2 of sortedH2s) {
+    if (smartOutline.length >= 12) break;
+    const lower = h2.toLowerCase();
+    // Skip generic headings
+    if (/^(conclusion|summary|final thoughts|related|table of contents|share|comments)$/i.test(lower.trim())) continue;
+    smartOutline.push(h2);
+  }
+
+  // 3. Add missing angles based on content analysis
+  if (!coveredAngles.has('benefits') && !smartOutline.some(h => /benefit|advantage|pro/i.test(h))) {
+    smartOutline.push(`Key Benefits of ${keyword.charAt(0).toUpperCase() + keyword.slice(1)}`);
+  }
+  if (!smartOutline.some(h => /mistake|avoid|common/i.test(h))) {
+    smartOutline.push(`Common ${keyword.charAt(0).toUpperCase() + keyword.slice(1)} Mistakes to Avoid`);
+  }
+  if (!smartOutline.some(h => /faq|question/i.test(h))) {
+    smartOutline.push(`${keyword.charAt(0).toUpperCase() + keyword.slice(1)} FAQ`);
+  }
+
   // 3. Extract questions from related pages
   const questions = new Set();
   for (const page of relatedPages) {
@@ -367,12 +395,13 @@ export function generateBrief(rootDir, targetKeyword) {
     suggestedTitle,
     targetWordCount,
     avgCompetitorWordCount: avgWordCount,
-    suggestedOutline: sortedH2s,
+    suggestedOutline: smartOutline.slice(0, 15),
     questionsToAnswer: [...questions].slice(0, 10),
     internalLinkingOpportunities: linkingOpportunities.slice(0, 15),
     relatedKeywords: relatedKeywords.slice(0, 15),
     contentGaps: contentGaps.slice(0, 10),
     geoOptimizationTips: geoTips,
+    searchIntent: classifySearchIntent(keyword, relatedPages),
     analysis: {
       totalPagesScanned: allPages.length,
       relatedPagesFound: relatedPages.length,
@@ -387,42 +416,99 @@ export function generateBrief(rootDir, targetKeyword) {
 }
 
 /**
+ * Classify search intent from related pages.
+ * @param {string} keyword
+ * @param {object[]} relatedPages
+ * @returns {object}
+ */
+function classifySearchIntent(keyword, relatedPages) {
+  const signals = { informational: 0, transactional: 0, comparison: 0, navigational: 0 };
+
+  for (const page of relatedPages) {
+    const text = [page.title, page.h1, ...page.h2s, page.metaDescription].join(' ').toLowerCase();
+    if (/what|why|how|guide|learn|understand|explain|tutorial/i.test(text)) signals.informational++;
+    if (/buy|price|pricing|discount|free|trial|sign up|download|order|shop/i.test(text)) signals.transactional++;
+    if (/vs|versus|compare|alternative|best|top|review|rating/i.test(text)) signals.comparison++;
+    if (/login|dashboard|account|support|docs|documentation|help/i.test(text)) signals.navigational++;
+  }
+
+  const primary = Object.entries(signals).sort((a, b) => b[1] - a[1])[0];
+  return {
+    primary: primary[0],
+    signals,
+    recommendation: intentRecommendation(primary[0]),
+  };
+}
+
+/**
+ * Return a content recommendation based on intent type.
+ * @param {string} intent
+ * @returns {string}
+ */
+function intentRecommendation(intent) {
+  const recs = {
+    informational: 'Write educational, in-depth content. Use question H2s, definitions, and examples.',
+    transactional: 'Focus on benefits, pricing, CTAs, and social proof. Include comparison tables.',
+    comparison: 'Create detailed comparison tables, pros/cons lists, and clear recommendations.',
+    navigational: 'Ensure clear navigation, documentation structure, and quick-access links.',
+  };
+  return recs[intent] || recs.informational;
+}
+
+/**
  * Generate a suggested H1/title based on keyword and related pages.
+ * Uses intent-aware title generation with content gap analysis.
  * @param {string} keyword
  * @param {object[]} relatedPages
  * @returns {string}
  */
 function generateSuggestedTitle(keyword, relatedPages) {
-  // Analyze existing title patterns
   const titles = relatedPages.map(p => p.title).filter(t => t.length > 0);
+  const titleKeyword = keyword.split(/\s+/)
+    .map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
 
-  // Check for common title patterns
-  const hasGuide = titles.some(t => /guide/i.test(t));
-  const hasHow = titles.some(t => /how to/i.test(t));
-  const hasWhat = titles.some(t => /what is/i.test(t));
-  const hasYear = titles.some(t => /\b20\d{2}\b/.test(t));
+  // Classify search intent from related content
+  const allText = relatedPages.map(p => [p.title, p.h1, ...p.h2s].join(' ')).join(' ').toLowerCase();
 
-  // Capitalize keyword for title
-  const titleKeyword = keyword
-    .split(/\s+/)
-    .map(w => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+  const isHowTo = /how to|step|guide|tutorial|setup|install|configure/i.test(allText);
+  const isComparison = /vs|versus|compare|alternative|best|top \d/i.test(allText);
+  const isDefinition = /what is|meaning|definition|explained|understanding/i.test(allText);
+  const isProblem = /fix|solve|issue|problem|error|troubleshoot|why/i.test(allText);
+  const isList = /best|top \d|\d+ ways|\d+ tips|\d+ strategies/i.test(allText);
 
-  // Generate a title that differentiates from existing content
-  if (!hasGuide) {
-    return `The Complete Guide to ${titleKeyword}`;
-  }
-  if (!hasHow) {
-    return `How to Master ${titleKeyword}: A Step-by-Step Approach`;
-  }
-  if (!hasWhat) {
-    return `What Is ${titleKeyword}? Everything You Need to Know`;
-  }
-  if (!hasYear) {
-    return `${titleKeyword}: The Definitive Guide`;
-  }
+  // Count existing pages to find content gaps in title format
+  const existingFormats = {
+    number: titles.filter(t => /\d+/.test(t)).length,
+    question: titles.filter(t => /\?/.test(t) || /^(what|how|why|when|where|who|can|does|is|are|should)/i.test(t)).length,
+    guide: titles.filter(t => /guide|tutorial|101/i.test(t)).length,
+    year: titles.filter(t => /\b20\d{2}\b/.test(t)).length,
+  };
 
-  return `${titleKeyword}: Expert Insights and Best Practices`;
+  // Generate title that fills a content gap in format
+  const year = new Date().getFullYear();
+
+  if (isComparison && existingFormats.number === 0) {
+    return `${titleKeyword}: The 7 Best Options Compared (${year})`;
+  }
+  if (isProblem && existingFormats.question === 0) {
+    return `Why ${titleKeyword} Fails (And How to Fix It)`;
+  }
+  if (isHowTo && existingFormats.guide === 0) {
+    return `${titleKeyword}: The Complete Guide for ${year}`;
+  }
+  if (isDefinition) {
+    return `${titleKeyword} Explained: What It Is and Why It Matters`;
+  }
+  if (isList && existingFormats.number === 0) {
+    return `11 ${titleKeyword} Strategies That Actually Work`;
+  }
+  if (existingFormats.year === 0) {
+    return `${titleKeyword}: What Works in ${year} (Data-Backed Guide)`;
+  }
+  if (existingFormats.question === 0) {
+    return `Is ${titleKeyword} Worth It? An Honest Analysis`;
+  }
+  return `The ${titleKeyword} Playbook: From Zero to Expert`;
 }
 
 // ---------------------------------------------------------------------------

@@ -578,10 +578,26 @@ export function analyzeKeywords(rootDir) {
   }
   for (const [keyword, pages] of primaryGroups) {
     if (pages.length > 1) {
+      // Detect search intent for each page based on H1/title patterns
+      const intents = pages.map(rel => {
+        const st = pageStates.get(rel);
+        const signal = ((st && st.h1Text) || (st && st.titleText) || '').toLowerCase();
+        if (/^(what|why|how|guide|understanding|introduction)\b/.test(signal)) return 'informational';
+        if (/\b(buy|pricing|discount|free\s+trial|sign\s+up|download)\b/.test(signal)) return 'transactional';
+        if (/\b(vs|versus|compare|alternative|review|best)\b/.test(signal)) return 'comparison';
+        if (/\b(login|dashboard|account|support)\b/.test(signal)) return 'navigational';
+        return 'informational'; // default
+      });
+      const uniqueIntents = new Set(intents);
+      const hasSameIntent = uniqueIntents.size === 1;
+
       cannibalization.push({
         keyword,
         pages,
-        recommendation: `Consolidate "${keyword}" targeting into one authoritative page, or differentiate each page's angle`,
+        sameIntent: hasSameIntent,
+        recommendation: hasSameIntent
+          ? `Consolidate "${keyword}" — these pages compete for the same search intent`
+          : `Multiple pages target "${keyword}" but with different intent — monitor but not urgent`,
       });
     }
   }
@@ -625,7 +641,7 @@ export function analyzeKeywords(rootDir) {
     summary: {
       totalPages: pageTokens.size,
       totalClusters: clusters.length,
-      cannibalizationIssues: cannibalization.length,
+      cannibalizationIssues: cannibalization.filter(c => c.sameIntent).length,
       contentGaps: topGaps.length,
     },
   };

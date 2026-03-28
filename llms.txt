@@ -1,6 +1,6 @@
-# claude-rank v1.9.2
+# claude-rank v2.0.0
 
-claude-rank is a free, open-source Claude Code plugin with 170+ rules across 10 scanners for comprehensive search optimization, AI citability, keyword analysis, content briefs, performance, and security auditing.
+claude-rank is a free, open-source Claude Code plugin with 175+ rules across 10 scanners for comprehensive search optimization, AI citability, keyword analysis, content briefs, performance, mobile, and security auditing. All commands accept URLs or local directories.
 
 ## Scanners
 
@@ -10,8 +10,8 @@ claude-rank is a free, open-source Claude Code plugin with 170+ rules across 10 
 - **AI Citability Scorer** (7 dimensions): Measures how likely AI models are to cite your content across authority, uniqueness, structure, freshness, depth, attribution, and accessibility
 - **Content Intelligence**: Readability analysis, duplicate detection, thin content, orphan pages, hub page detection, topic clustering, internal linking suggestions
 - **Keyword Clustering**: TF-IDF keyword extraction, topic clusters, keyword cannibalization detection, content gaps, pillar page suggestions
-- **Content Brief Generator**: SEO-optimized writing briefs with suggested title, word count target, H2 outline, questions to answer, internal linking opportunities, related keywords, GEO tips
-- **Performance Scanner** (16 rules): Render-blocking resources, image optimization (srcset, WebP/AVIF), CLS risk, font loading, resource hints, lazy loading, mixed content
+- **Content Brief Generator**: Intent-aware writing briefs with search intent classification, smart title generation, H2 outline with auto-generated angles (definition, mistakes, FAQ), word count target, questions to answer, internal linking, related keywords, GEO tips
+- **Performance + Mobile Scanner** (21 rules): Render-blocking resources, image optimization (srcset, WebP/AVIF), CLS risk, font loading, resource hints, lazy loading, mixed content, mobile viewport, responsive viewport, tap target sizes, font sizes, fixed-width elements
 - **Vertical SEO Scanner** (20 rules): Industry-specific schema validation (e-commerce, local business) with auto-detection
 - **Security Scanner** (15 rules): HTTPS enforcement, CSP, X-Frame-Options, referrer policy, permissions policy, mixed content, SRI, inline event handlers, iframe security
 
@@ -22,8 +22,11 @@ claude-rank is a free, open-source Claude Code plugin with 170+ rules across 10 
 - **Score tracking**: 0-100 scoring with severity-weighted deductions (critical -20, high -10, medium -5, low -2) and persistent audit history
 - **HTML report export**: Visual audit reports for sharing with teams or clients
 - **CI/CD threshold mode**: Set minimum score thresholds and fail builds that don't meet them
+- **URL scanning for all commands**: Every scanner accepts URLs or local directories — scan competitors without downloading their site
+- **GSC CSV integration**: Import Google Search Console exports for quick wins, low CTR alerts, and engagement insights
+- **Intent-aware cannibalization**: Only flags keyword overlap when pages share the same search intent
 - **Multi-page URL crawling**: Crawl and audit multiple pages from a single domain
-- **15 CLI commands**: Full command-line interface for all scanners and utilities
+- **16 CLI commands**: Full command-line interface for all scanners and utilities
 
 ## Scoring
 

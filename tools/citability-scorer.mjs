@@ -57,7 +57,7 @@ function scorePage(state, html) {
   // Target: 1+ data point per 200 words. +33.9% visibility boost.
   const statMatches = bodyText.match(/\d+(\.\d+)?%|\$[\d,.]+|\d{2,}[\s,]\d{3}|\d+\.\d+x|\d+\/\d+/g) || [];
   const statsPer200 = (statMatches.length / wordCount) * 200;
-  scores.statisticDensity = Math.min(15, Math.round(statsPer200 * 10));
+  scores.statisticDensity = Math.min(15, (statMatches.length > 0 ? 3 : 0) + Math.round(statsPer200 * 8));
 
   // 2. Front-loading score (0-15 points)
   // 44.2% of AI citations come from first 30% of content
@@ -69,6 +69,7 @@ function scorePage(state, html) {
   if (hasDirectAnswer) frontScore += 8;
   if (hasNumbers) frontScore += 4;
   if (first30pct.length > 100) frontScore += 3;
+  if (wordCount > 300) frontScore += 2; // baseline for substantial content
   scores.frontLoading = Math.min(15, frontScore);
 
   // 3. Source citation quality (0-15 points)
@@ -88,6 +89,8 @@ function scorePage(state, html) {
   // Check for quote patterns (blockquote, or "said" / "according to")
   if (/<blockquote/i.test(html)) expertScore += 2;
   if (/according\s+to|said\s+\w+|noted\s+\w+|explained\s+\w+/i.test(bodyText)) expertScore += 2;
+  // Check for byline patterns ("by Author", "Written by", "Author:")
+  if (/\b(by|written\s+by|author|posted\s+by)\s+[A-Z]/i.test(bodyText)) expertScore += 3;
   scores.expertAttribution = Math.min(15, expertScore);
 
   // 5. Definition clarity (0-10 points)
@@ -95,7 +98,8 @@ function scorePage(state, html) {
   const defPatterns = bodyText.match(/\b\w+\s+(is|are)\s+(a|an|the)\s+/gi) || [];
   const refersTo = bodyText.match(/\brefers?\s+to\b/gi) || [];
   const means = bodyText.match(/\bmeans?\s+/gi) || [];
-  const totalDefs = defPatterns.length + refersTo.length + means.length;
+  const knownAs = bodyText.match(/\b(known\s+as|defined\s+as|consists?\s+of|involves?)\b/gi) || [];
+  const totalDefs = defPatterns.length + refersTo.length + means.length + knownAs.length;
   scores.definitionClarity = Math.min(10, totalDefs * 2);
 
   // 6. Structured data completeness (0-15 points)
@@ -121,6 +125,8 @@ function scorePage(state, html) {
   // Paragraph count (well-segmented content)
   const paraCount = (html.match(/<p[\s>]/gi) || []).length;
   if (paraCount >= 5) structScore += 3;
+  if (state.h2Texts.length >= 5) structScore += 2; // many sections = well organized
+  if (paraCount >= 10) structScore += 2; // well-segmented
   scores.contentStructure = Math.min(15, structScore);
 
   // Total

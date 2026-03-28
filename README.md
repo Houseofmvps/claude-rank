@@ -2,7 +2,7 @@
 
 <img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
 
-### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 170+ rules. 10 scanners. Competitive X-Ray. Auto-fix everything. Dominate search — traditional and AI.
+### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 175+ rules. 10 scanners. URL + directory scanning. Mobile-first checks. GSC integration. Dominate search — traditional and AI.
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Houseofmvps/claude-rank/ci.yml?style=for-the-badge&logo=github&label=CI)](https://github.com/Houseofmvps/claude-rank/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -151,16 +151,17 @@ Once installed, use slash commands:
 ```bash
 npx @houseofmvps/claude-rank scan ./my-project          # Local directory
 npx @houseofmvps/claude-rank scan https://example.com    # Live URL (crawls up to 50 pages)
-npx @houseofmvps/claude-rank geo ./my-project            # AI search audit
-npx @houseofmvps/claude-rank aeo ./my-project            # Answer engine audit
+npx @houseofmvps/claude-rank geo https://example.com     # GEO audit on any URL
+npx @houseofmvps/claude-rank aeo https://example.com     # AEO audit on any URL
 npx @houseofmvps/claude-rank citability ./my-project     # AI citability score
 npx @houseofmvps/claude-rank content ./my-project        # Content intelligence
 npx @houseofmvps/claude-rank keyword ./my-project        # Keyword clustering
 npx @houseofmvps/claude-rank brief ./my-project "seo"    # Content brief
-npx @houseofmvps/claude-rank perf ./my-project           # Performance audit
+npx @houseofmvps/claude-rank perf https://example.com    # Performance audit on any URL
 npx @houseofmvps/claude-rank vertical ./my-project       # E-commerce / local SEO
-npx @houseofmvps/claude-rank security ./my-project       # Security audit
+npx @houseofmvps/claude-rank security https://example.com # Security audit on any URL
 npx @houseofmvps/claude-rank compete https://comp.com .  # Competitive X-Ray
+npx @houseofmvps/claude-rank gsc ./gsc-export.csv        # GSC data analysis
 npx @houseofmvps/claude-rank schema ./my-project         # Structured data
 npx @houseofmvps/claude-rank scan . --report html        # Agency-ready HTML report
 npx @houseofmvps/claude-rank scan . --threshold 80       # CI/CD mode
@@ -304,9 +305,9 @@ Generate SEO-optimized writing briefs from your existing content.
 | **Related Keywords** | Extracted from related pages via TF-IDF |
 | **GEO Tips** | Statistics to include, expert quotes, citation opportunities |
 
-### 8. Performance Scanner — 16 Rules
+### 8. Performance + Mobile Scanner — 21 Rules
 
-Performance risk detection from static HTML — no Chrome or Lighthouse needed.
+Performance and mobile-first indexing checks from static HTML — no Chrome needed.
 
 | Category | What it checks |
 |---|---|
@@ -316,6 +317,7 @@ Performance risk detection from static HTML — no Chrome or Lighthouse needed.
 | **Loading** | Missing lazy loading, missing fetchpriority for LCP image |
 | **Fonts** | Web fonts without font-display: swap |
 | **Images** | Responsive images (srcset/sizes), modern formats (WebP/AVIF) |
+| **Mobile** | Missing viewport meta, non-responsive viewport, small tap targets (<44px), small font sizes (<12px), fixed-width elements (>500px) |
 
 ### 9. Vertical SEO — 20 Rules
 
@@ -460,18 +462,19 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 |---------|-------------|
 | `scan ./project` | SEO scan — 50 rules |
 | `scan https://example.com` | Crawl + scan live site (up to 50 pages) |
-| `geo ./project` | GEO — AI search optimization (45 rules + E-E-A-T) |
-| `aeo ./project` | AEO — answer engine optimization (12 rules) |
-| `citability ./project` | AI Citability Score — 7 dimensions |
-| `content ./project` | Content intelligence — readability, duplicates, linking |
-| `keyword ./project` | Keyword clustering — TF-IDF, cannibalization, gaps |
-| `brief ./project "keyword"` | Content brief generator |
-| `perf ./project` | Performance risk assessment (16 rules) |
-| `vertical ./project` | Vertical SEO — e-commerce + local (20 rules) |
-| `security ./project` | Security headers audit (15 rules) |
+| `geo ./project` or `geo https://...` | GEO — AI search optimization (45 rules + E-E-A-T) |
+| `aeo ./project` or `aeo https://...` | AEO — answer engine optimization (12 rules) |
+| `citability ./project` or URL | AI Citability Score — 7 dimensions |
+| `content ./project` or URL | Content intelligence — readability, duplicates, linking |
+| `keyword ./project` or URL | Keyword clustering — TF-IDF, cannibalization, gaps |
+| `brief ./project "keyword"` | Content brief generator (with search intent) |
+| `perf ./project` or URL | Performance + mobile audit (21 rules) |
+| `vertical ./project` or URL | Vertical SEO — e-commerce + local (20 rules) |
+| `security ./project` or URL | Security headers audit (15 rules) |
 | `compete https://comp.com .` | Competitive X-Ray |
+| `gsc ./export.csv` | Google Search Console data analysis |
 | `cwv https://example.com` | Core Web Vitals via Lighthouse |
-| `schema ./project` | Detect + validate structured data |
+| `schema ./project` or URL | Detect + validate structured data |
 | `help` | Show available commands |
 
 **Flags:** `--json` (raw output) | `--report html` (visual report) | `--threshold N` (CI mode) | `--pages N` (crawl limit) | `--single` (one page only)
@@ -489,7 +492,8 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 | Content Intelligence (readability, duplicates) | Yes | No |
 | Keyword Clustering (TF-IDF) | Yes | No |
 | Content Brief Generator | Yes | No |
-| Performance Risk Assessment | Yes | No |
+| Performance + Mobile Audit | 21 rules | No |
+| Mobile-first indexing checks | 5 rules | No |
 | Vertical SEO (e-commerce + local) | Auto-detection | No |
 | Security Headers Audit | Yes | No |
 | Competitive X-Ray (50+ tech patterns) | Side-by-side | No |
@@ -504,6 +508,10 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 | Score tracking with trends | Yes | No |
 | Broken internal link detection | Filesystem resolution | No |
 | Image optimization audit (srcset, WebP/AVIF) | Yes | No |
+| URL scanning for all commands | Yes | No |
+| GSC CSV data integration | Yes | No |
+| Search intent classification | Yes | No |
+| Intent-aware cannibalization | Yes | No |
 | AI bot detection | 11 bots | Basic |
 
 **claude-seo tells you what's wrong. claude-rank fixes it.**
@@ -537,10 +545,10 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 | Category | Count |
 |---|---|
-| **Scanners** | 10 (SEO, GEO, AEO, Citability, Content, Keywords, Briefs, Perf, Vertical, Security) |
-| **Rules** | 170+ across all scanners |
-| **Tools** | 17 (scanners + schema engine + robots/sitemap/llms.txt + competitive X-ray + formatter) |
-| **Slash Commands** | 12 |
+| **Scanners** | 10 (SEO, GEO, AEO, Citability, Content, Keywords, Briefs, Perf+Mobile, Vertical, Security) |
+| **Rules** | 175+ across all scanners |
+| **Tools** | 18 (scanners + GSC analyzer + schema engine + robots/sitemap/llms.txt + competitive X-ray + formatter) |
+| **CLI Commands** | 16 (all accept URLs) |
 | **Agents** | 9 autonomous auditors |
 | **Skills** | 7 plugin skills |
 | **Tests** | 372 |

@@ -131,10 +131,14 @@ describe('brief-generator', () => {
       const result = generateBrief(dir, 'seo');
       assert.ok(result.suggestedOutline.length >= 2,
         `Expected >= 2 H2 suggestions, got ${result.suggestedOutline.length}`);
-      // "On-Page SEO" appears in both pages, should be first (highest frequency)
+      // Smart outline starts with a definition section
       const firstH2Lower = result.suggestedOutline[0].toLowerCase();
-      assert.ok(firstH2Lower.includes('on-page seo'),
-        `Expected first H2 to be the most frequent ("on-page seo"), got "${result.suggestedOutline[0]}"`);
+      assert.ok(firstH2Lower.includes('what is'),
+        `Expected first H2 to be a definition heading, got "${result.suggestedOutline[0]}"`);
+      // "On-Page SEO" appears in both pages, should be present and early in outline
+      const onPageIdx = result.suggestedOutline.findIndex(h => h.toLowerCase().includes('on-page seo'));
+      assert.ok(onPageIdx >= 0,
+        `Expected "on-page seo" to appear in outline`);
     } finally {
       fs.rmSync(dir, { recursive: true });
     }

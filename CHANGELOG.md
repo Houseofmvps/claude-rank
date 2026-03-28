@@ -7,6 +7,25 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [2.0.0] — 2026-03-29
+
+### Added
+- **URL scanning for ALL commands** — `geo`, `aeo`, `citability`, `content`, `keyword`, `brief`, `perf`, `vertical`, `security`, `schema` now accept URLs (not just `scan` and `compete`). Fetches pages to temp dir, runs scanner, cleans up.
+- **Mobile-first checks** — 5 new perf rules: `no-mobile-viewport`, `viewport-not-responsive`, `small-tap-targets`, `small-font-size`, `fixed-width-elements`
+- **GSC CSV import** — new `gsc` command reads Google Search Console exports, generates quick wins (position 4-20), low CTR alerts, and engagement insights
+- **Search intent classification** — content briefs now include primary intent (informational/transactional/comparison/navigational) with tailored recommendations
+
+### Improved
+- **Brief titles** — intent-aware title generation instead of generic "Expert Insights and Best Practices". Analyzes content gaps in title format, generates titles like "Why X Fails (And How to Fix It)" or "X: The 7 Best Options Compared (2026)"
+- **Smart outlines** — brief H2 outline starts with definition heading, adds proven H2s from competitors, auto-appends missing angles (benefits, mistakes, FAQ)
+- **Citability scoring** — rebalanced 5 dimensions: baseline stats points, substantial content bonus, broader definition patterns, byline detection, heading/paragraph bonuses
+- **Keyword cannibalization** — intent-aware detection. Pages with same keyword but different intent (e.g., "what is churn" vs "best churn tools") get "monitor" not "consolidate"
+- **Internal link detection** — hash-only links (#section) no longer flagged as broken, query strings stripped before resolution, SPA-style routes handled correctly
+
+### Fixed
+- Broken internal link false positives for `/#section` anchor links
+- Schema engine hook confirmed working (was reported as Bug #1 but hook uses correct `validate` subcommand)
+
 ## [1.9.2] — 2026-03-29
 
 ### Fixed
@@ -120,6 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Single dependency: htmlparser2
 - Node.js >= 18, ESM-only
 
+[2.0.0]: https://github.com/Houseofmvps/claude-rank/releases/tag/v2.0.0
 [1.9.2]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.2
 [1.9.1]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.1
 [1.9.0]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.0

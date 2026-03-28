@@ -1,6 +1,7 @@
 /**
  * perf-scanner.mjs — Performance risk assessment from HTML analysis.
- * Detects CLS risks, render-blocking resources, LCP candidates, font loading issues.
+ * Detects CLS risks, render-blocking resources, LCP candidates, font loading issues,
+ * and mobile-specific SEO issues (viewport, tap targets, font sizes, fixed widths).
  * No Chrome or Lighthouse needed — pure HTML analysis.
  */
 
@@ -29,9 +30,17 @@ const RULES = {
   'no-modern-image-format':   { severity: 'medium', deduction: 5 },
   'no-image-sizes':           { severity: 'low', deduction: 2 },
 
+  // Mobile-specific (high -10)
+  'no-mobile-viewport':       { severity: 'high', deduction: 10 },
+  'viewport-not-responsive':  { severity: 'high', deduction: 10 },
+
+  // Mobile-specific (medium -5)
+  'small-tap-targets':        { severity: 'medium', deduction: 5 },
+  'small-font-size':          { severity: 'medium', deduction: 5 },
+  'fixed-width-elements':     { severity: 'medium', deduction: 5 },
+
   // Low (-2)
   'no-preconnect':            { severity: 'low', deduction: 2 },
-  'missing-meta-viewport':    { severity: 'low', deduction: 2 },
   'excessive-dom-depth':      { severity: 'low', deduction: 2 },
 };
 
@@ -61,6 +70,7 @@ export function scanDirectory(rootDir) {
   let hasAnyResourceHints = false;
   let hasAnyMixedContent = false;
   let hasViewport = false;
+  let viewportContent = '';
   let totalImagesWithoutSrcset = 0;
   let totalImagesWithSrcsetNoSizes = 0;
   let allImageFormats = new Set();
@@ -108,7 +118,50 @@ export function scanDirectory(rootDir) {
     if (state.preloadLinks && state.preloadLinks.length > 0) hasAnyResourceHints = true;
     if (state.prefetchLinks && state.prefetchLinks.length > 0) hasAnyResourceHints = true;
     if (state.httpResources && state.httpResources.length > 0) hasAnyMixedContent = true;
-    if (state.hasViewport) hasViewport = true;
+    if (state.hasViewport) {
+      hasViewport = true;
+      if (state.viewportContent) viewportContent = state.viewportContent;
+    }
+
+    // --- Regex-based mobile checks on raw HTML content ---
+
+    // Small tap targets: interactive elements with inline width/height < 44px
+    if (!firedRules.has('small-tap-targets')) {
+      const tapTargetRe = /<(?:a|button|input|select)[^>]*style="[^"]*(?:width|height)\s*:\s*(\d+)px/gi;
+      let tapMatch;
+      while ((tapMatch = tapTargetRe.exec(content)) !== null) {
+        if (parseInt(tapMatch[1], 10) < 44) {
+          add('small-tap-targets', 'Interactive element with inline width/height below 44px — tap targets should be at least 44x44px for mobile usability');
+          break;
+        }
+      }
+    }
+
+    // Small font size: inline font-size below 12px (not in <style> blocks)
+    if (!firedRules.has('small-font-size')) {
+      // Strip <style> blocks then check inline styles
+      const noStyleBlocks = content.replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '');
+      const fontSizeRe = /font-size:\s*(\d+)px/gi;
+      let fontMatch;
+      while ((fontMatch = fontSizeRe.exec(noStyleBlocks)) !== null) {
+        if (parseInt(fontMatch[1], 10) < 12) {
+          add('small-font-size', 'Inline font-size below 12px detected — text smaller than 12px is hard to read on mobile and may trigger a Google mobile usability warning');
+          break;
+        }
+      }
+    }
+
+    // Fixed-width elements: inline width > 500px that could cause horizontal scroll
+    if (!firedRules.has('fixed-width-elements')) {
+      const fixedWidthRe = /style="[^"]*width:\s*(\d+)px/gi;
+      let widthMatch;
+      while ((widthMatch = fixedWidthRe.exec(content)) !== null) {
+        if (parseInt(widthMatch[1], 10) > 500) {
+          add('fixed-width-elements', 'Element with fixed pixel width > 500px detected — use relative units (%, vw, max-width) to prevent horizontal scrolling on mobile');
+          break;
+        }
+      }
+    }
   }
 
   // Apply rules
@@ -160,8 +213,12 @@ export function scanDirectory(rootDir) {
     add('no-preconnect', 'No <link rel="preconnect"> found — preconnect to critical third-party domains (fonts, CDN, analytics)');
   }
 
+  // --- Mobile-specific checks (Google mobile-first indexing) ---
+
   if (!hasViewport) {
-    add('missing-meta-viewport', 'No viewport meta tag — page will not render correctly on mobile devices');
+    add('no-mobile-viewport', 'No <meta name="viewport"> tag — Google uses mobile-first indexing, page will not render correctly on mobile');
+  } else if (viewportContent && !viewportContent.includes('device-width')) {
+    add('viewport-not-responsive', `Viewport uses fixed width instead of device-width ("${viewportContent}") — use width=device-width for responsive layout`);
   }
 
   // Image optimization rules

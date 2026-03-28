@@ -11,7 +11,7 @@
     {
       "name": "claude-rank",
       "description": "SEO/GEO/AEO audit + auto-fix + keyword clustering + content briefs + E-E-A-T + Core Web Vitals + schema validation",
-      "version": "1.9.2",
+      "version": "2.0.0",
       "source": "./",
       "author": {
         "name": "Houseofmvps",

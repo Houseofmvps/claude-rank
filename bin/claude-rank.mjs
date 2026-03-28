@@ -47,6 +47,7 @@ const commands = {
   perf: '../tools/perf-scanner.mjs',
   vertical: '../tools/vertical-scanner.mjs',
   security: '../tools/security-scanner.mjs',
+  gsc: '../tools/gsc-analyzer.mjs',
 };
 
 if (command === 'help' || command === '--help') {
@@ -68,6 +69,7 @@ Commands:
   compete     Competitive X-Ray — compare your site vs any competitor URL
   cwv         Run Core Web Vitals / Lighthouse audit (needs Chrome installed)
   schema      Detect and validate structured data
+  gsc         Analyze Google Search Console CSV export (queries or pages)
   help        Show this help message
 
 Flags:
@@ -81,19 +83,24 @@ URL scanning:
   Pass a URL instead of a directory to scan a live site via HTTP.
   By default, crawls up to 50 pages following internal links.
   Use --single to scan only the given URL without crawling.
-  Only the "scan" command supports URL scanning.
+  All commands support URL scanning (not just "scan").
 
 Examples:
   claude-rank scan ./my-project
   claude-rank scan https://savemrr.co
   claude-rank scan https://savemrr.co --pages 10
   claude-rank scan https://savemrr.co --single
+  claude-rank geo https://savemrr.co
+  claude-rank aeo https://savemrr.co --single
+  claude-rank security https://example.com
+  claude-rank brief https://savemrr.co "seo optimization"
   claude-rank compete https://competitor.com ./my-project
   npx @houseofmvps/claude-rank geo .
   claude-rank scan ./site --json
   claude-rank scan ./site --report html
   claude-rank scan ./site --threshold 80
   claude-rank brief ./site "seo optimization"
+  claude-rank gsc ./search-console-export.csv
   claude-rank scan . --report html --threshold 80
 `);
   process.exit(0);
@@ -168,6 +175,18 @@ if (!toolPath) {
   process.exit(1);
 }
 
+// Handle gsc command separately (takes CSV file, not directory/URL)
+if (command === 'gsc') {
+  const { parseGscCsv } = await import(new URL('../tools/gsc-analyzer.mjs', import.meta.url));
+  const result = parseGscCsv(dir);
+  if (jsonFlag) {
+    console.log(JSON.stringify(result, null, 2));
+  } else {
+    console.log(formatGscReport(result));
+  }
+  process.exit(result.error ? 1 : 0);
+}
+
 // Detect if the target is a URL (http:// or https://)
 const isUrl = dir.startsWith('http://') || dir.startsWith('https://');
 
@@ -190,6 +209,7 @@ const {
   formatPerfReport,
   formatVerticalReport,
   formatSecurityReport,
+  formatGscReport,
 } = await import(new URL('../tools/lib/formatter.mjs', import.meta.url));
 
 const formatters = {
@@ -204,37 +224,105 @@ const formatters = {
   perf: formatPerfReport,
   vertical: formatVerticalReport,
   security: formatSecurityReport,
+  gsc: formatGscReport,
 };
 
-// URL-based scanning (scan command only)
+// URL-based scanning
 if (isUrl) {
-  if (command !== 'scan') {
-    console.error(`URL scanning is only supported for the "scan" command, not "${command}".`);
-    process.exit(1);
-  }
-
-  const { scanUrl, scanSite } = await import(new URL('../tools/url-scanner.mjs', import.meta.url));
-  try {
-    const result = singleFlag
-      ? await scanUrl(dir)
-      : await scanSite(dir, { maxPages });
-    if (jsonFlag) {
-      console.log(JSON.stringify(result, null, 2));
-    } else {
-      console.log(formatSeoReport(result));
-    }
-
-    // Check threshold for URL scans
-    if (thresholdFlag != null) {
-      const score = result.scores?.seo ?? 0;
-      if (score < thresholdFlag) {
-        console.error(`Score ${score} is below threshold ${thresholdFlag}`);
-        process.exit(1);
+  // For `scan` command, use the dedicated url-scanner (cross-page analysis)
+  if (command === 'scan') {
+    const { scanUrl, scanSite } = await import(new URL('../tools/url-scanner.mjs', import.meta.url));
+    try {
+      const result = singleFlag
+        ? await scanUrl(dir)
+        : await scanSite(dir, { maxPages });
+      if (jsonFlag) {
+        console.log(JSON.stringify(result, null, 2));
+      } else {
+        console.log(formatSeoReport(result));
       }
+
+      // Check threshold for URL scans
+      if (thresholdFlag != null) {
+        const score = result.scores?.seo ?? 0;
+        if (score < thresholdFlag) {
+          console.error(`Score ${score} is below threshold ${thresholdFlag}`);
+          process.exit(1);
+        }
+      }
+    } catch (err) {
+      console.error(`Error scanning URL: ${err.message}`);
+      process.exit(1);
     }
-  } catch (err) {
-    console.error(`Error scanning URL: ${err.message}`);
-    process.exit(1);
+  } else {
+    // All other commands: fetch URL(s) to temp dir, then run directory-based scanner
+    const { fetchToTempDir, cleanupTempDir } = await import(new URL('../tools/lib/url-adapter.mjs', import.meta.url));
+    let tmpDir;
+    try {
+      const fetched = await fetchToTempDir(dir, { single: singleFlag, maxPages });
+      tmpDir = fetched.tmpDir;
+
+      if (command === 'schema') {
+        const mod = await import(new URL(toolPath, import.meta.url));
+        const { findHtmlFiles } = await import(new URL('../tools/lib/html-parser.mjs', import.meta.url));
+        const { readFileSync } = await import('node:fs');
+        const files = findHtmlFiles(tmpDir);
+        const results = [];
+        for (const file of files) {
+          const html = readFileSync(file, 'utf-8');
+          const schemas = mod.detectSchema(html);
+          if (schemas.length > 0) {
+            results.push({ file, schemas });
+          }
+        }
+        if (jsonFlag) {
+          console.log(JSON.stringify(results, null, 2));
+        } else {
+          console.log(formatSchemaReport(results));
+        }
+      } else if (command === 'brief') {
+        const briefKeyword = positional[2] || '';
+        if (!briefKeyword) {
+          console.error('The brief command requires a target keyword.');
+          console.error('Usage: claude-rank brief <url> "<keyword>"');
+          process.exit(1);
+        }
+        const mod = await import(new URL(toolPath, import.meta.url));
+        const result = mod.generateBrief(tmpDir, briefKeyword);
+        if (jsonFlag) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(formatBriefReport(result));
+        }
+      } else {
+        const mod = await import(new URL(toolPath, import.meta.url));
+        const result = command === 'content' ? mod.analyzeDirectory(tmpDir)
+          : command === 'keyword' ? mod.analyzeKeywords(tmpDir)
+          : mod.scanDirectory(tmpDir);
+        if (jsonFlag) {
+          console.log(JSON.stringify(result, null, 2));
+        } else {
+          console.log(formatters[command](result));
+        }
+
+        // Check threshold
+        if (thresholdFlag != null) {
+          const scoreKey = command === 'citability' ? 'citability' : command === 'perf' ? 'performance' : (command === 'content' || command === 'keyword') ? null : command;
+          if (scoreKey !== null) {
+            const score = result.scores?.[scoreKey] ?? 0;
+            if (score < thresholdFlag) {
+              console.error(`Score ${score} is below threshold ${thresholdFlag}`);
+              process.exit(1);
+            }
+          }
+        }
+      }
+    } catch (err) {
+      console.error(`Error scanning URL: ${err.message}`);
+      process.exit(1);
+    } finally {
+      if (tmpDir) cleanupTempDir(tmpDir);
+    }
   }
 } else {
   // Directory-based scanning

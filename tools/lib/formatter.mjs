@@ -1384,3 +1384,58 @@ export function formatSchemaReport(results) {
   return lines.join('\n');
 }
 
+// ---------------------------------------------------------------------------
+// GSC Report
+// ---------------------------------------------------------------------------
+
+export function formatGscReport(data) {
+  if (data.error) {
+    return `\n  ${c.red('\u2718')} ${data.error}\n`;
+  }
+
+  const lines = [];
+  lines.push('');
+  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Google Search Console Report')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+  lines.push('');
+
+  const s = data.insights?.summary;
+  if (s) {
+    lines.push(`  ${c.dim('Data type:')}      ${c.bold(data.type === 'queries' ? 'Queries' : data.type === 'pages' ? 'Pages' : 'Unknown')}`);
+    lines.push(`  ${c.dim('Total rows:')}     ${data.rowCount}`);
+    lines.push(`  ${c.dim('Total clicks:')}   ${c.bold(String(s.totalClicks))}`);
+    lines.push(`  ${c.dim('Impressions:')}    ${c.bold(String(s.totalImpressions))}`);
+    lines.push(`  ${c.dim('Avg position:')}   ${c.bold(String(s.avgPosition))}`);
+    lines.push(`  ${c.dim('Avg CTR:')}        ${c.bold(s.avgCtr)}`);
+    lines.push('');
+  }
+
+  const insights = data.insights?.insights || [];
+  for (const insight of insights) {
+    const icon = insight.type === 'quick-wins' ? c.green('\u2605')
+      : insight.type === 'low-ctr' ? c.yellow('\u26A0')
+      : c.red('\u25CF');
+
+    lines.push(`  ${icon} ${c.bold(insight.title)}`);
+    lines.push(`  ${c.dim(insight.description)}`);
+    lines.push('');
+
+    for (const item of insight.items) {
+      const parts = [];
+      if (item.impressions !== undefined) parts.push(`${c.dim('imp:')} ${item.impressions}`);
+      if (item.position !== undefined) parts.push(`${c.dim('pos:')} ${item.position}`);
+      if (item.clicks !== undefined) parts.push(`${c.dim('clicks:')} ${item.clicks}`);
+      if (item.ctr !== undefined) parts.push(`${c.dim('ctr:')} ${item.ctr}`);
+      lines.push(`    ${c.cyan('\u2022')} ${item.item}  ${parts.join('  ')}`);
+    }
+    lines.push('');
+  }
+
+  if (insights.length === 0) {
+    lines.push(`  ${c.green('\u2714')} No actionable insights found — data looks healthy.`);
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
