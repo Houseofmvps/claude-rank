@@ -452,7 +452,7 @@ Two terms that matter and are often confused:
 | **SSRF protection** | All HTTP tools block private IPs, cloud metadata, non-HTTP schemes |
 | **No telemetry** | Zero data collection. No phone-home. Ever. |
 | **1 dependency** | `htmlparser2` only (30KB). No native bindings. No `node-gyp`. |
-| **260 tests** | Security module, all scanners, competitive X-Ray, CLI, integration tests |
+| **265 tests** | Security module, all scanners, competitive X-Ray, CLI, integration tests |
 | **File safety** | 10MB read cap. 5MB response cap. Restrictive write permissions. |
 
 See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
@@ -509,7 +509,7 @@ Found a bug? Want a new scanner rule? [Open an issue](https://github.com/Houseof
 git clone https://github.com/Houseofmvps/claude-rank.git
 cd claude-rank
 npm install
-npm test              # 260 tests, node:test
+npm test              # 265 tests, node:test
 node tools/<tool>.mjs # No build step
 ```
 

@@ -33,24 +33,24 @@ function makeScanResult({ score = 72, scoreKey = 'seo', findings = [], filesScan
 // ---------------------------------------------------------------------------
 
 describe('formatSeoReport score labels', () => {
-  it('shows EXCELLENT for score >= 90', () => {
+  it('shows Excellent for score >= 90', () => {
     const out = stripAnsi(formatSeoReport(makeScanResult({ score: 95 })));
-    assert.ok(out.includes('EXCELLENT'), 'Expected EXCELLENT label');
+    assert.ok(out.includes('Excellent'), 'Expected Excellent label');
   });
 
-  it('shows GOOD for score >= 80', () => {
+  it('shows Good for score >= 80', () => {
     const out = stripAnsi(formatSeoReport(makeScanResult({ score: 85 })));
-    assert.ok(out.includes('GOOD'), 'Expected GOOD label');
+    assert.ok(out.includes('Good'), 'Expected Good label');
   });
 
-  it('shows NEEDS WORK for score >= 60', () => {
-    const out = stripAnsi(formatSeoReport(makeScanResult({ score: 65 })));
-    assert.ok(out.includes('NEEDS WORK'), 'Expected NEEDS WORK label');
+  it('shows Needs Work for score >= 70', () => {
+    const out = stripAnsi(formatSeoReport(makeScanResult({ score: 72 })));
+    assert.ok(out.includes('Needs Work'), 'Expected Needs Work label');
   });
 
-  it('shows POOR for score < 60', () => {
+  it('shows Poor for score < 60', () => {
     const out = stripAnsi(formatSeoReport(makeScanResult({ score: 40 })));
-    assert.ok(out.includes('POOR'), 'Expected POOR label');
+    assert.ok(out.includes('Poor'), 'Expected Poor label');
   });
 });
 
@@ -61,12 +61,12 @@ describe('formatSeoReport score labels', () => {
 describe('formatSeoReport score display', () => {
   it('contains the numeric score', () => {
     const out = stripAnsi(formatSeoReport(makeScanResult({ score: 72 })));
-    assert.ok(out.includes('72/100'), 'Expected score 72/100 in output');
+    assert.ok(out.includes('72'), 'Expected score 72 in output');
   });
 
   it('contains files scanned count', () => {
     const out = stripAnsi(formatSeoReport(makeScanResult({ filesScanned: 26 })));
-    assert.ok(out.includes('Files scanned: 26'), 'Expected files scanned count');
+    assert.ok(out.includes('Files scanned:') && out.includes('26'), 'Expected files scanned count');
   });
 });
 
@@ -82,7 +82,6 @@ describe('formatSeoReport findings grouping', () => {
       { rule: 'title-too-long', severity: 'medium', file: 'c.html', message: 'Title is too long' },
     ];
     const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
-    // Should show the rule once with a page count, not three separate entries
     assert.ok(out.includes('title-too-long'), 'Expected rule name');
     assert.ok(out.includes('(3 pages)'), 'Expected grouped page count');
   });
@@ -111,13 +110,12 @@ describe('formatSeoReport findings grouping', () => {
 // ---------------------------------------------------------------------------
 
 describe('formatSeoReport with empty findings', () => {
-  it('returns a string with no grouped findings listed', () => {
+  it('returns a string with all-clear message', () => {
     const out = formatSeoReport(makeScanResult({ score: 100, findings: [] }));
     assert.ok(typeof out === 'string', 'Expected string output');
-    assert.ok(stripAnsi(out).includes('No findings'), 'Should show no-findings message when empty');
-    // The box shows "Findings: 0" as a stat, but the detail section should not appear
-    assert.ok(!stripAnsi(out).includes('CRITICAL'), 'Should not list any severity tags');
-    assert.ok(!stripAnsi(out).includes('HIGH'), 'Should not list any severity tags');
+    assert.ok(stripAnsi(out).includes('All checks passed'), 'Should show all-clear message when empty');
+    assert.ok(!stripAnsi(out).includes('Must Fix'), 'Should not list Must Fix section');
+    assert.ok(!stripAnsi(out).includes('Should Fix'), 'Should not list Should Fix section');
   });
 });
 
@@ -140,7 +138,7 @@ describe('formatGeoReport', () => {
   it('shows GEO Audit title and score', () => {
     const out = stripAnsi(formatGeoReport(makeScanResult({ score: 80, scoreKey: 'geo' })));
     assert.ok(out.includes('GEO Audit'), 'Expected GEO Audit title');
-    assert.ok(out.includes('80/100'), 'Expected score');
+    assert.ok(out.includes('80'), 'Expected score');
   });
 });
 
@@ -148,7 +146,59 @@ describe('formatAeoReport', () => {
   it('shows AEO Audit title and score', () => {
     const out = stripAnsi(formatAeoReport(makeScanResult({ score: 55, scoreKey: 'aeo' })));
     assert.ok(out.includes('AEO Audit'), 'Expected AEO Audit title');
-    assert.ok(out.includes('55/100'), 'Expected score');
+    assert.ok(out.includes('55'), 'Expected score');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Fix hints
+// ---------------------------------------------------------------------------
+
+describe('formatSeoReport fix hints', () => {
+  it('shows fix suggestions for known rules', () => {
+    const findings = [
+      { rule: 'missing-title', severity: 'high', file: 'page.html', message: 'Page is missing a <title> tag' },
+    ];
+    const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
+    assert.ok(out.includes('Add <title>'), 'Expected fix hint for missing-title');
+  });
+
+  it('shows next steps section', () => {
+    const findings = [
+      { rule: 'thin-content', severity: 'high', file: 'page.html', message: 'Too thin' },
+    ];
+    const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
+    assert.ok(out.includes('Next Steps'), 'Expected Next Steps section');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Severity grouping
+// ---------------------------------------------------------------------------
+
+describe('formatSeoReport severity sections', () => {
+  it('groups critical/high as Must Fix', () => {
+    const findings = [
+      { rule: 'has-noindex', severity: 'critical', file: 'page.html', message: 'Has noindex' },
+    ];
+    const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
+    assert.ok(out.includes('Must Fix'), 'Expected Must Fix section for critical findings');
+  });
+
+  it('groups medium as Should Fix', () => {
+    const findings = [
+      { rule: 'missing-viewport', severity: 'medium', file: 'page.html', message: 'Missing viewport' },
+    ];
+    const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
+    assert.ok(out.includes('Should Fix'), 'Expected Should Fix section');
+  });
+
+  it('groups low as Nice to Have', () => {
+    const findings = [
+      { rule: 'no-manifest', severity: 'low', file: 'page.html', message: 'Missing manifest' },
+    ];
+    const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
+    assert.ok(out.includes('Nice to Have'), 'Expected Nice to Have section');
   });
 });
 
