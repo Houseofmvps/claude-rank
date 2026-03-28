@@ -499,7 +499,7 @@ export function scanDirectory(rootDir) {
   for (const filePath of htmlFiles) {
     scanIdx++;
     if (htmlFiles.length > 5) {
-      process.stderr.write(`\rScanning [${scanIdx}/${htmlFiles.length}]`);
+      process.stderr.write(`\x1b[2K\rScanning [${scanIdx}/${htmlFiles.length}]`);
     }
     const sizeCheck = checkFileSize(filePath, fs.statSync);
     if (!sizeCheck.ok) continue;

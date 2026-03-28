@@ -150,6 +150,15 @@ if (isUrl) {
     } else {
       console.log(formatSeoReport(result));
     }
+
+    // Check threshold for URL scans
+    if (thresholdFlag != null) {
+      const score = result.scores?.seo ?? 0;
+      if (score < thresholdFlag) {
+        console.error(`Score ${score} is below threshold ${thresholdFlag}`);
+        process.exit(1);
+      }
+    }
   } catch (err) {
     console.error(`Error scanning URL: ${err.message}`);
     process.exit(1);
