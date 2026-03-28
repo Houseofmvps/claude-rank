@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // Standalone CLI: npx claude-rank <command> <directory>
-// Commands: scan, geo, aeo, schema, fix
+// Commands: scan, geo, aeo, compete, cwv, schema
 
 const args = process.argv.slice(2);
 const jsonFlag = args.includes('--json');
@@ -96,6 +96,9 @@ if (command === 'compete') {
   // The local dir is the third positional arg (after 'compete' and URL)
   const localDir = positional[2] || '.';
   const { resolve: resolvePath } = await import('path');
+
+  // Clear argv before importing so compete-scanner's inline CLI guard doesn't fire
+  process.argv = process.argv.slice(0, 2);
 
   const { compete } = await import(new URL('../tools/compete-scanner.mjs', import.meta.url));
   const { formatCompeteReport } = await import(new URL('../tools/lib/formatter.mjs', import.meta.url));

@@ -2,7 +2,7 @@
 
 <img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
 
-### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 80+ rules. Competitive X-Ray. Auto-fix everything. Dominate search — traditional and AI.
+### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 85+ rules. Competitive X-Ray. Auto-fix everything. Dominate search — traditional and AI.
 
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
 [![npm downloads](https://img.shields.io/npm/dm/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=blue&label=Monthly%20Downloads)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -188,11 +188,11 @@ That's not an SEO problem. That's a visibility problem across every search surfa
 /claude-rank:rank-audit
 ```
 
-One command. Three scanners run in parallel — SEO, GEO, and AEO. 80+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
+One command. Three scanners run in parallel — SEO, GEO, and AEO. 85+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
 
 ```
 SEO Score:   87/100  ████████████░░  (39 rules)
-GEO Score:   92/100  █████████████░  (25 rules)
+GEO Score:   92/100  █████████████░  (34 rules)
 AEO Score:   78/100  ██████████░░░░  (12 rules)
 Overall:     86/100  READY TO RANK
 ```
@@ -215,7 +215,7 @@ Traditional search optimization. The foundation.
 | **Structured Data** | JSON-LD presence, schema validation against Google's required fields (14 schema types) |
 | **Cross-Page** | Duplicate titles across pages, duplicate descriptions, canonical conflicts, orphan pages |
 
-### GEO Scanner — 25 Rules
+### GEO Scanner — 34 Rules
 
 Generative Engine Optimization. For AI search engines: ChatGPT, Perplexity, Gemini, Google AI Overviews.
 
@@ -382,7 +382,7 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 |---------|-------------|
 | `claude-rank scan ./project` | Full SEO scan (39 rules) |
 | `claude-rank scan https://example.com` | Crawl and scan a live site (up to 50 pages) |
-| `claude-rank geo ./project` | GEO scan — AI search optimization (25 rules) |
+| `claude-rank geo ./project` | GEO scan — AI search optimization (34 rules) |
 | `claude-rank aeo ./project` | AEO scan — answer engine optimization (12 rules) |
 | `claude-rank compete https://competitor.com .` | Competitive X-Ray — side-by-side comparison |
 | `claude-rank cwv https://example.com` | Core Web Vitals via Lighthouse (optional) |
@@ -411,7 +411,7 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | Feature | claude-rank | claude-seo |
 |---------|:-----------:|:----------:|
 | SEO rules | 39 | ~20 |
-| GEO — AI search (Perplexity, ChatGPT, Gemini) | 25 rules | Basic |
+| GEO — AI search (Perplexity, ChatGPT, Gemini) | 34 rules | Basic |
 | AEO — featured snippets, voice search | 12 rules | None |
 | Core Web Vitals / Lighthouse | Yes (optional) | No |
 | Redirect chain detection | Yes | No |
@@ -463,7 +463,7 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 | Category | Count | Highlights |
 |---|---|---|
-| **Tools** | 10 | SEO scanner (39 rules), GEO scanner (25 rules), AEO scanner (12 rules), Competitive X-Ray (50+ tech patterns), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
+| **Tools** | 10 | SEO scanner (39 rules), GEO scanner (34 rules), AEO scanner (12 rules), Competitive X-Ray (50+ tech patterns), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
 | **Skills** | 7 | /claude-rank:rank, /claude-rank:rank-audit, /claude-rank:rank-geo, /claude-rank:rank-aeo, /claude-rank:rank-fix, /claude-rank:rank-schema, /claude-rank:rank-compete |
 | **Agents** | 4 | SEO auditor (project-type-aware), GEO auditor (AI readiness levels), AEO auditor (snippet opportunities), Schema auditor (Google validation) |
 | **Commands** | 7 | All slash commands above |

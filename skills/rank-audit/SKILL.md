@@ -71,7 +71,7 @@ Advise on content optimizations the scanner cannot automate:
 
 ## Phase 7: Backlink Strategy
 
-Guide link building: create link-worthy assets, guest posting, broken link building, HARO.
+Guide link building: create link-worthy assets, guest posting, broken link building, digital PR, expert roundups.
 
 ## Phase 8: Search Console Action Plan
 
