@@ -76,6 +76,40 @@ $ claude-rank scan https://houseofmvps.com    # Scan any live URL
 
 ## Quick Start
 
+### Use as a Claude Code Plugin (recommended)
+
+claude-rank works as a full Claude Code plugin with skills, agents, and slash commands. In any Claude Code session, run:
+
+```
+/plugin marketplace add Houseofmvps/claude-rank
+/plugin install claude-rank@Houseofmvps-claude-rank
+```
+
+Or clone and add locally:
+```bash
+git clone https://github.com/Houseofmvps/claude-rank.git
+```
+Then in Claude Code:
+```
+/plugin marketplace add ./claude-rank
+/plugin install claude-rank@claude-rank
+```
+
+After installing, run `/reload-plugins` to activate in your current session.
+
+Once installed, use slash commands:
+
+```
+/claude-rank:rank          # Smart routing — detects what your project needs
+/claude-rank:rank-audit    # Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC action plan
+/claude-rank:rank-geo      # Deep AI search optimization audit
+/claude-rank:rank-aeo      # Answer engine optimization audit
+/claude-rank:rank-fix      # Auto-fix all findings in one command
+/claude-rank:rank-schema   # Detect, validate, generate, inject JSON-LD
+```
+
+**Zero configuration.** claude-rank reads your project structure and self-configures.
+
 ### Use standalone — no install needed
 
 ```bash
@@ -97,43 +131,6 @@ claude-rank scan ./my-project
 claude-rank scan https://example.com --pages 20
 claude-rank cwv https://example.com    # Core Web Vitals (just needs Chrome)
 ```
-
-### Use as a Claude Code Plugin
-
-claude-rank works as a full Claude Code plugin with skills, agents, and slash commands. To install:
-
-**Option 1: Install from GitHub (recommended)**
-
-In any Claude Code session, run:
-```
-/plugin marketplace add Houseofmvps/claude-rank
-/plugin install claude-rank@Houseofmvps-claude-rank
-```
-
-**Option 2: Clone and add locally**
-```bash
-git clone https://github.com/Houseofmvps/claude-rank.git
-```
-Then in Claude Code:
-```
-/plugin marketplace add ./claude-rank
-/plugin install claude-rank@claude-rank
-```
-
-After installing, run `/reload-plugins` to activate in your current session.
-
-Once installed, use slash commands inside any Claude Code session:
-
-```
-/claude-rank:rank          # Smart routing — detects what your project needs
-/claude-rank:rank-audit    # Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC action plan
-/claude-rank:rank-geo      # Deep AI search optimization audit
-/claude-rank:rank-aeo      # Answer engine optimization audit
-/claude-rank:rank-fix      # Auto-fix all findings in one command
-/claude-rank:rank-schema   # Detect, validate, generate, inject JSON-LD
-```
-
-**Zero configuration.** claude-rank reads your project structure and self-configures.
 
 ---
 
