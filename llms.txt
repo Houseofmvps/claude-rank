@@ -1,4 +1,4 @@
-# claude-rank v2.0.0
+# claude-rank v2.0.2
 
 claude-rank is a free, open-source Claude Code plugin that tells you why your site won't get cited by AI — and fixes the discoverability files automatically. 170+ rules across 10 scanners for search optimization, AI citability, keyword analysis, content briefs, performance, mobile, and security auditing. All commands accept URLs or local directories.
 
@@ -11,7 +11,7 @@ claude-rank is a free, open-source Claude Code plugin that tells you why your si
 - **Content Intelligence**: Readability analysis, duplicate detection, thin content, orphan pages, hub page detection, topic clustering, internal linking suggestions
 - **Keyword Clustering**: TF-IDF keyword extraction, topic clusters, keyword cannibalization detection, content gaps, pillar page suggestions
 - **Content Brief Generator**: Intent-aware writing briefs with search intent classification, smart title generation, H2 outline with auto-generated angles (definition, mistakes, FAQ), word count target, questions to answer, internal linking, related keywords, GEO tips
-- **Performance + Mobile Scanner** (21 rules): Render-blocking resources, image optimization (srcset, WebP/AVIF), CLS risk, font loading, resource hints, lazy loading, mixed content, mobile viewport, responsive viewport, tap target sizes, font sizes, fixed-width elements
+- **Performance + Mobile Scanner** (20 rules): Render-blocking resources, image optimization (srcset, WebP/AVIF), CLS risk, font loading, resource hints, lazy loading, mixed content, mobile viewport, responsive viewport, tap target sizes, font sizes, fixed-width elements
 - **Vertical SEO Scanner** (20 rules): Industry-specific schema validation (e-commerce, local business) with auto-detection
 - **Security Scanner** (15 rules): HTTPS enforcement, CSP, X-Frame-Options, referrer policy, permissions policy, mixed content, SRI, inline event handlers, iframe security
 

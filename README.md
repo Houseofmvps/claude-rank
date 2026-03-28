@@ -132,7 +132,7 @@ SEO Score:         87/100  ████████████░░  (54 rules
 GEO Score:         92/100  █████████████░  (45 rules + E-E-A-T)
 AEO Score:         78/100  ██████████░░░░  (12 rules)
 Citability Score:  65/100  ████████░░░░░░  (7 dimensions)
-Performance:       90/100  █████████████░  (21 rules)
+Performance:       90/100  █████████████░  (20 rules)
 Security:          80/100  ███████████░░░  (15 rules)
 Overall:           86/100  READY TO RANK
 ```
@@ -230,7 +230,7 @@ Generate SEO-optimized writing briefs from your existing content.
 | **Related Keywords** | Extracted from related pages via TF-IDF |
 | **GEO Tips** | Statistics to include, expert quotes, citation opportunities |
 
-### 8. Performance + Mobile Scanner — 21 Rules
+### 8. Performance + Mobile Scanner — 20 Rules
 
 Performance and mobile-first indexing checks from static HTML. No Chrome needed.
 
@@ -393,7 +393,7 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 | `content ./project` or URL | Content intelligence — readability, duplicates, linking |
 | `keyword ./project` or URL | Keyword clustering — TF-IDF, cannibalization, gaps |
 | `brief ./project "keyword"` | Content brief generator (with search intent) |
-| `perf ./project` or URL | Performance + mobile audit (21 rules) |
+| `perf ./project` or URL | Performance + mobile audit (20 rules) |
 | `vertical ./project` or URL | Vertical SEO — e-commerce + local (20 rules) |
 | `security ./project` or URL | Security headers audit (15 rules) |
 | `compete https://comp.com .` | Competitive X-Ray |
@@ -417,7 +417,7 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 | Content Intelligence (readability, duplicates) | Yes | No |
 | Keyword Clustering (TF-IDF) | Yes | No |
 | Content Brief Generator | Yes | No |
-| Performance + Mobile Audit | 21 rules | No |
+| Performance + Mobile Audit | 20 rules | No |
 | Mobile-first indexing checks | 5 rules | No |
 | Vertical SEO (e-commerce + local) | Auto-detection | No |
 | Security Headers Audit | Yes | No |

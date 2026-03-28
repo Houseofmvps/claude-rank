@@ -3,7 +3,7 @@ name: rank-perf
 description: Performance and mobile-first indexing audit from HTML — no Chrome needed.
 ---
 
-# Performance + Mobile Scanner (21 rules)
+# Performance + Mobile Scanner (20 rules)
 
 Assess performance risks and mobile-first indexing issues from static HTML. No Chrome needed.
 

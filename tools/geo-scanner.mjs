@@ -1,5 +1,5 @@
 /**
- * geo-scanner.mjs — GEO (Generative Engine Optimization) scanner with 39 rules.
+ * geo-scanner.mjs — GEO (Generative Engine Optimization) scanner with 45 rules.
  * Scans a directory for AI search engine optimization signals and returns a
  * structured findings + score report.
  *

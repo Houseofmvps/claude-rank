@@ -1,5 +1,5 @@
 /**
- * seo-scanner.mjs — Core SEO scanner with 37 rules and cross-page analysis.
+ * seo-scanner.mjs — Core SEO scanner with 54 rules and cross-page analysis.
  * Scans a directory of HTML files and returns a structured findings + score report.
  */
 
