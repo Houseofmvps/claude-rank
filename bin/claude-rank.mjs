@@ -51,6 +51,7 @@ Commands:
   scan     Run core SEO scanner (default)
   geo      Run GEO (AI search) scanner
   aeo      Run AEO (answer engine) scanner
+  compete  Competitive X-Ray — compare your site vs any competitor URL
   cwv      Run Core Web Vitals / Lighthouse audit (needs Chrome installed)
   schema   Detect and validate structured data
   help     Show this help message
@@ -73,12 +74,43 @@ Examples:
   claude-rank scan https://savemrr.co
   claude-rank scan https://savemrr.co --pages 10
   claude-rank scan https://savemrr.co --single
+  claude-rank compete https://competitor.com ./my-project
   npx @houseofmvps/claude-rank geo .
   claude-rank scan ./site --json
   claude-rank scan ./site --report html
   claude-rank scan ./site --threshold 80
   claude-rank scan . --report html --threshold 80
 `);
+  process.exit(0);
+}
+
+// Handle compete command separately (requires URL + local dir)
+if (command === 'compete') {
+  const competitorUrl = dir;
+  if (!competitorUrl.startsWith('http://') && !competitorUrl.startsWith('https://')) {
+    console.error('The compete command requires a competitor URL.');
+    console.error('Usage: claude-rank compete <competitor-url> [your-directory]');
+    process.exit(1);
+  }
+
+  // The local dir is the third positional arg (after 'compete' and URL)
+  const localDir = positional[2] || '.';
+  const { resolve: resolvePath } = await import('path');
+
+  const { compete } = await import(new URL('../tools/compete-scanner.mjs', import.meta.url));
+  const { formatCompeteReport } = await import(new URL('../tools/lib/formatter.mjs', import.meta.url));
+
+  try {
+    const result = await compete(competitorUrl, resolvePath(localDir));
+    if (jsonFlag) {
+      console.log(JSON.stringify(result, null, 2));
+    } else {
+      console.log(formatCompeteReport(result));
+    }
+  } catch (err) {
+    console.error(`Error: ${err.message}`);
+    process.exit(1);
+  }
   process.exit(0);
 }
 

@@ -142,6 +142,104 @@ export function formatAeoReport(result) {
 /**
  * Format schema detection results.
  */
+/**
+ * Format competitive analysis comparison report.
+ */
+export function formatCompeteReport(result) {
+  if (result.error) {
+    return c.red(`Error: ${result.error}`);
+  }
+
+  const lines = [];
+  const W = 62;
+  const hr = '\u2550'.repeat(W);
+
+  // Header
+  lines.push(`\u2554${hr}\u2557`);
+  lines.push(`\u2551${pad(c.bold('       claude-rank Competitive X-Ray'), W + 9)}\u2551`);
+  lines.push(`\u2560${hr}\u2563`);
+  lines.push(`\u2551${pad(`  ${c.bold('You:')}   ${result.you.title || result.you.directory}`, W + 9)}\u2551`);
+  lines.push(`\u2551${pad(`  ${c.bold('Them:')}  ${result.competitor.title || result.competitor.url}`, W + 9)}\u2551`);
+  lines.push(`\u2560${hr}\u2563`);
+
+  // Score summary
+  const { youWins, themWins, ties } = result.summary;
+  const summaryText = `  Score: ${c.green(`You ${youWins}`)}  vs  ${c.red(`Them ${themWins}`)}  (${ties} ties)`;
+  lines.push(`\u2551${pad(summaryText, W + 31)}\u2551`);
+  lines.push(`\u255A${hr}\u255D`);
+  lines.push('');
+
+  // Headline
+  lines.push(c.bold(result.headline));
+  lines.push('');
+
+  // Verdicts table
+  lines.push(c.bold('Signal-by-Signal Comparison:'));
+  lines.push(`  ${pad(c.dim('Area'), 26)}  ${pad(c.dim('You'), 12)}  ${pad(c.dim('Them'), 12)}  ${c.dim('Winner')}`);
+  lines.push(c.dim('  ' + '\u2500'.repeat(58)));
+
+  for (const v of result.verdicts) {
+    const winIcon = v.winner === 'you' ? c.green('\u2713') :
+                    v.winner === 'them' ? c.red('\u2717') : c.dim('\u2500');
+    const winLabel = v.winner === 'you' ? c.green('You') :
+                     v.winner === 'them' ? c.red('Them') : c.dim('Tie');
+    lines.push(`  ${pad(v.area, 24)}  ${pad(String(v.you), 10)}  ${pad(String(v.them), 10)}  ${winIcon} ${winLabel}`);
+  }
+  lines.push('');
+
+  // Tech stack comparison
+  if (result.competitor.techStack.length > 0 || result.you.techStack.length > 0) {
+    lines.push(c.bold('Tech Stack:'));
+    if (result.you.techStack.length > 0) {
+      lines.push(`  ${c.green('You:')}  ${result.you.techStack.map(t => `${t.tech} ${c.dim(`(${t.category})`)}`).join(', ')}`);
+    } else {
+      lines.push(`  ${c.green('You:')}  ${c.dim('None detected')}`);
+    }
+    if (result.competitor.techStack.length > 0) {
+      lines.push(`  ${c.red('Them:')} ${result.competitor.techStack.map(t => `${t.tech} ${c.dim(`(${t.category})`)}`).join(', ')}`);
+    } else {
+      lines.push(`  ${c.red('Them:')} ${c.dim('None detected')}`);
+    }
+    lines.push('');
+  }
+
+  // Conversion signals
+  if (result.competitor.conversionSignals.length > 0 || result.you.conversionSignals.length > 0) {
+    lines.push(c.bold('Conversion Signals:'));
+    if (result.you.conversionSignals.length > 0) {
+      lines.push(`  ${c.green('You:')}  ${result.you.conversionSignals.join(', ')}`);
+    } else {
+      lines.push(`  ${c.green('You:')}  ${c.dim('None detected')}`);
+    }
+    if (result.competitor.conversionSignals.length > 0) {
+      lines.push(`  ${c.red('Them:')} ${result.competitor.conversionSignals.join(', ')}`);
+    } else {
+      lines.push(`  ${c.red('Them:')} ${c.dim('None detected')}`);
+    }
+    lines.push('');
+  }
+
+  // Quick wins
+  if (result.summary.theirAdvantages.length > 0) {
+    lines.push(c.bold('Quick Wins — Close These Gaps:'));
+    for (const gap of result.summary.theirAdvantages.slice(0, 5)) {
+      lines.push(`  ${c.yellow('\u26A0')} ${gap}`);
+    }
+    lines.push('');
+  }
+
+  // Your strengths
+  if (result.summary.yourAdvantages.length > 0) {
+    lines.push(c.bold('Your Strengths — Keep These:'));
+    for (const adv of result.summary.yourAdvantages.slice(0, 5)) {
+      lines.push(`  ${c.green('\u2713')} ${adv}`);
+    }
+    lines.push('');
+  }
+
+  return lines.join('\n');
+}
+
 export function formatSchemaReport(results) {
   if (!results || results.length === 0) {
     return c.yellow('No structured data (JSON-LD, Microdata, RDFa) detected.');

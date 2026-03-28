@@ -2,7 +2,7 @@
 
 <img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
 
-### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 80+ rules. Auto-fix everything. Dominate search — traditional and AI.
+### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 80+ rules. Competitive X-Ray. Auto-fix everything. Dominate search — traditional and AI.
 
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
 [![npm downloads](https://img.shields.io/npm/dm/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=blue&label=Monthly%20Downloads)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -70,6 +70,38 @@ $ claude-rank scan https://houseofmvps.com    # Scan any live URL
 ╚════════════════════════════════════════════════╝
 ```
 
+```
+$ claude-rank compete https://competitor.com ./my-project
+
+╔══════════════════════════════════════════════════════════════╗
+║       claude-rank Competitive X-Ray                          ║
+╠══════════════════════════════════════════════════════════════╣
+║  You:   My SaaS Product                                      ║
+║  Them:  Competitor Landing Page                               ║
+╠══════════════════════════════════════════════════════════════╣
+║  Score: You 12  vs  Them 6  (2 ties)                          ║
+╚══════════════════════════════════════════════════════════════╝
+
+You're winning 12-6 (2 ties). Keep pushing.
+
+Signal-by-Signal Comparison:
+  Area                      You           Them          Winner
+  ──────────────────────────────────────────────────────────
+  Title tag                 Yes           Yes           ─ Tie
+  Word count                1,247         386           ✓ You
+  JSON-LD schemas           3             0             ✓ You
+  Conversion signals        5             2             ✓ You
+  Internal links            12            3             ✓ You
+
+Tech Stack:
+  You:  Next.js (Framework), Tailwind CSS (CSS), Stripe (Payments)
+  Them: WordPress (CMS), Google Analytics (Analytics)
+
+Quick Wins — Close These Gaps:
+  ⚠ Open Graph tags
+  ⚠ External links
+```
+
 *Real output from scanning [savemrr.co](https://savemrr.co) (26-page SaaS landing) and [houseofmvps.com](https://houseofmvps.com).*
 
 ---
@@ -106,6 +138,7 @@ Once installed, use slash commands:
 /claude-rank:rank-aeo      # Answer engine optimization audit
 /claude-rank:rank-fix      # Auto-fix all findings in one command
 /claude-rank:rank-schema   # Detect, validate, generate, inject JSON-LD
+/claude-rank:rank-compete  # Competitive X-Ray — compare vs any competitor URL
 ```
 
 **Zero configuration.** claude-rank reads your project structure and self-configures.
@@ -118,6 +151,7 @@ npx @houseofmvps/claude-rank scan https://example.com    # Live URL (crawls up t
 npx @houseofmvps/claude-rank geo ./my-project            # AI search audit
 npx @houseofmvps/claude-rank aeo ./my-project            # Answer engine audit
 npx @houseofmvps/claude-rank schema ./my-project         # Structured data
+npx @houseofmvps/claude-rank compete https://competitor.com .  # Competitive X-Ray
 npx @houseofmvps/claude-rank scan ./site --json          # Raw JSON output
 npx @houseofmvps/claude-rank scan ./site --report html   # Agency-ready HTML report
 npx @houseofmvps/claude-rank scan ./site --threshold 80  # CI/CD mode
@@ -203,6 +237,28 @@ Answer Engine Optimization. Featured snippets, People Also Ask, voice search.
 | **Snippet Fitness** | Answer paragraph length (40-60 words optimal), numbered steps, definition patterns |
 | **Voice Search** | Concise answers under 29 words (Google voice search average), conversational phrasing |
 | **Rich Results** | Featured image, breadcrumb markup, review schema |
+
+### Competitive X-Ray — NEW in v1.7
+
+Point at any competitor URL. claude-rank fetches their page and compares everything side-by-side:
+
+| Category | What it compares |
+|---|---|
+| **Tech Stack** | Framework, CMS, CDN, analytics, payments, chat — 50+ detection patterns (Wappalyzer-style) |
+| **SEO Signals** | Title, meta description, canonical, Open Graph, Twitter Card, structured data |
+| **Content Depth** | Word count, heading structure, internal/external links |
+| **Conversion Signals** | CTAs, pricing pages, demo booking, social proof, waitlists — 24 patterns |
+| **Structured Data** | JSON-LD count, schema types, validation against Google required fields |
+| **Performance** | Blocking vs deferred scripts, semantic HTML usage |
+
+**Output:** Signal-by-signal comparison table with clear winner per area, tech stack diff, conversion signal diff, quick wins (gaps to close), and your strengths (advantages to keep).
+
+```bash
+claude-rank compete https://competitor.com ./my-project       # Compare vs competitor
+claude-rank compete https://competitor.com ./my-project --json # Raw JSON output
+```
+
+No API keys. No rate limits. No signup. Just point and compare.
 
 ### Core Web Vitals (Lighthouse)
 
@@ -328,6 +384,7 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | `claude-rank scan https://example.com` | Crawl and scan a live site (up to 50 pages) |
 | `claude-rank geo ./project` | GEO scan — AI search optimization (25 rules) |
 | `claude-rank aeo ./project` | AEO scan — answer engine optimization (12 rules) |
+| `claude-rank compete https://competitor.com .` | Competitive X-Ray — side-by-side comparison |
 | `claude-rank cwv https://example.com` | Core Web Vitals via Lighthouse (optional) |
 | `claude-rank schema ./project` | Detect and validate structured data |
 | `claude-rank scan ./site --report html` | Generate agency-ready HTML report |
@@ -345,6 +402,7 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | `/claude-rank:rank-aeo` | Answer engine optimization audit |
 | `/claude-rank:rank-fix` | Auto-fix all findings in one command |
 | `/claude-rank:rank-schema` | Detect, validate, generate, inject JSON-LD |
+| `/claude-rank:rank-compete` | Competitive X-Ray — compare vs any competitor URL |
 
 ---
 
@@ -366,6 +424,8 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | Multi-page URL crawling (up to 50 pages) | Yes | No |
 | HTML report export (agency-ready) | Yes | No |
 | CI/CD threshold mode | Yes | No |
+| Competitive analysis (X-Ray) | Yes — side-by-side comparison | No |
+| Tech stack detection (50+ patterns) | Yes | No |
 | AI bot detection | 9 bots | Basic |
 | llms.txt generation | Yes | No |
 | robots.txt generation | Yes | No |
@@ -392,7 +452,7 @@ Two terms that matter and are often confused:
 | **SSRF protection** | All HTTP tools block private IPs, cloud metadata, non-HTTP schemes |
 | **No telemetry** | Zero data collection. No phone-home. Ever. |
 | **1 dependency** | `htmlparser2` only (30KB). No native bindings. No `node-gyp`. |
-| **200 tests** | Security module, all scanners, CLI, integration tests |
+| **260 tests** | Security module, all scanners, competitive X-Ray, CLI, integration tests |
 | **File safety** | 10MB read cap. 5MB response cap. Restrictive write permissions. |
 
 See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
@@ -403,10 +463,10 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 | Category | Count | Highlights |
 |---|---|---|
-| **Tools** | 9 | SEO scanner (39 rules), GEO scanner (25 rules), AEO scanner (12 rules), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
-| **Skills** | 6 | /claude-rank:rank, /claude-rank:rank-audit, /claude-rank:rank-geo, /claude-rank:rank-aeo, /claude-rank:rank-fix, /claude-rank:rank-schema |
+| **Tools** | 10 | SEO scanner (39 rules), GEO scanner (25 rules), AEO scanner (12 rules), Competitive X-Ray (50+ tech patterns), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
+| **Skills** | 7 | /claude-rank:rank, /claude-rank:rank-audit, /claude-rank:rank-geo, /claude-rank:rank-aeo, /claude-rank:rank-fix, /claude-rank:rank-schema, /claude-rank:rank-compete |
 | **Agents** | 4 | SEO auditor (project-type-aware), GEO auditor (AI readiness levels), AEO auditor (snippet opportunities), Schema auditor (Google validation) |
-| **Commands** | 6 | All slash commands above |
+| **Commands** | 7 | All slash commands above |
 | **Research** | 3 | SEO benchmarks, GEO research, schema catalog |
 
 ---
@@ -449,7 +509,7 @@ Found a bug? Want a new scanner rule? [Open an issue](https://github.com/Houseof
 git clone https://github.com/Houseofmvps/claude-rank.git
 cd claude-rank
 npm install
-npm test              # 200 tests, node:test
+npm test              # 260 tests, node:test
 node tools/<tool>.mjs # No build step
 ```
 
