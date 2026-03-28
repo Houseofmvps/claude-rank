@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.1] — 2026-03-29
+
+### Fixed
+- Node 18 compatibility — replaced `import.meta.dirname` (Node 21.2+) with `fileURLToPath` polyfill in all test files
+- GitHub Actions CI added (Node 18/20/22)
+- All versions synced across package.json, plugin.json, marketplace.json, llms.txt
+
 ## [1.9.0] — 2026-03-28
 
 ### Added
@@ -105,6 +112,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Single dependency: htmlparser2
 - Node.js >= 18, ESM-only
 
+[1.9.1]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.1
 [1.9.0]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.0
 [1.8.0]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.8.0
 [1.7.0]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.7.0
