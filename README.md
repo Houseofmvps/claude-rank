@@ -102,27 +102,25 @@ claude-rank cwv https://example.com    # Core Web Vitals (requires Lighthouse)
 
 claude-rank works as a full Claude Code plugin with skills, agents, and slash commands. To install:
 
-**Option 1: Clone and add locally**
+**Option 1: Install from GitHub (recommended)**
+
+In any Claude Code session, run:
+```
+/plugin marketplace add Houseofmvps/claude-rank
+/plugin install claude-rank@Houseofmvps-claude-rank
+```
+
+**Option 2: Clone and add locally**
 ```bash
-# Clone the repo
 git clone https://github.com/Houseofmvps/claude-rank.git
-
-# In Claude Code, add the plugin directory
-/plugin install ./claude-rank
+```
+Then in Claude Code:
+```
+/plugin marketplace add ./claude-rank
+/plugin install claude-rank@claude-rank
 ```
 
-**Option 2: Install from npm and link**
-```bash
-# Install the package
-npm install -g @houseofmvps/claude-rank
-
-# Find where it's installed
-npm root -g
-# → /usr/local/lib/node_modules
-
-# In Claude Code, add the plugin directory
-/plugin install /usr/local/lib/node_modules/@houseofmvps/claude-rank
-```
+After installing, run `/reload-plugins` to activate in your current session.
 
 Once installed, use slash commands inside any Claude Code session:
 
