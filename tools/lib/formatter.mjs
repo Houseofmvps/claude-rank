@@ -669,8 +669,8 @@ export function formatContentReport(result) {
     lines.push(c.dim('  ' + '\u2500'.repeat(50)));
     for (const p of result.pages.slice(0, 10)) {
       const file = p.file || p.url || 'unknown';
-      const fk = p.fleschKincaid != null ? String(p.fleschKincaid) : '-';
-      const fog = p.gunningFog != null ? String(p.gunningFog) : '-';
+      const fk = p.readability?.fleschKincaid != null ? String(p.readability.fleschKincaid) : '-';
+      const fog = p.readability?.gunningFog != null ? String(p.readability.gunningFog) : '-';
       lines.push(`  ${pad(c.dim(file), 36)} ${pad(fk, 6)} ${fog}`);
     }
     if (result.pages.length > 10) {
@@ -698,7 +698,7 @@ export function formatContentReport(result) {
     lines.push(`  ${c.bold('Internal Linking Suggestions')} ${c.dim(`(${result.linkSuggestions.length})`)}`);
     lines.push('');
     for (const sug of result.linkSuggestions.slice(0, 5)) {
-      lines.push(`  ${c.cyan('\u2192')} ${c.dim(sug.from || sug.source)} ${c.dim('\u2192')} ${c.cyan(sug.to || sug.target)} ${c.dim(sug.reason || '')}`);
+      lines.push(`  ${c.cyan('\u2192')} ${c.bold(sug.topic)} ${c.dim(`(${sug.pages.join(', ')})`)}`);
     }
     if (result.linkSuggestions.length > 5) {
       lines.push(`  ${c.dim(`  ... +${result.linkSuggestions.length - 5} more suggestions`)}`);

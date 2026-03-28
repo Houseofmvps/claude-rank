@@ -9,11 +9,17 @@ import { parseHtml, findHtmlFiles } from './lib/html-parser.mjs';
 import { checkFileSize } from './lib/security.mjs';
 
 // E-commerce detection signals
-const ECOMMERCE_SIGNALS = [
+// Strong e-commerce signals (3 points each) — unique to shopping sites
+const ECOMMERCE_STRONG_SIGNALS = [
   'add to cart', 'add-to-cart', 'addtocart', 'buy now', 'checkout',
-  'shopping cart', 'shop now', 'product', '/product/', '/products/',
-  'price', '$', '€', '£', '¥', 'sku', 'in stock', 'out of stock',
+  'shopping cart', 'shop now', '/product/', '/products/',
+  'sku', 'in stock', 'out of stock',
   'add to bag', 'add to basket', 'wishlist',
+];
+
+// Weak e-commerce signals (1 point each) — also appear on SaaS pricing pages
+const ECOMMERCE_WEAK_SIGNALS = [
+  'product', 'price',
 ];
 
 // Local business detection signals
@@ -83,15 +89,24 @@ function detectSiteType(htmlFiles, rootDir) {
       content = fs.readFileSync(filePath, 'utf8').toLowerCase();
     } catch { continue; }
 
-    for (const signal of ECOMMERCE_SIGNALS) {
-      if (content.includes(signal)) ecomScore++;
+    let pageHasStrongSignal = false;
+    for (const signal of ECOMMERCE_STRONG_SIGNALS) {
+      if (content.includes(signal)) { ecomScore += 3; pageHasStrongSignal = true; }
+    }
+    // Weak signals only count if a strong signal is also on this page
+    if (pageHasStrongSignal) {
+      for (const signal of ECOMMERCE_WEAK_SIGNALS) {
+        if (content.includes(signal)) ecomScore++;
+      }
     }
     for (const signal of LOCAL_SIGNALS) {
       if (content.includes(signal)) localScore++;
     }
 
-    // Schema-based detection
-    if (content.includes('"product"') || content.includes('"offer"')) ecomScore += 5;
+    // Schema-based detection — only count if NOT SoftwareApplication (SaaS uses Offer legitimately)
+    const hasSaasSchema = content.includes('"softwareapplication"');
+    if (!hasSaasSchema && (content.includes('"@type":"product"') || content.includes('"@type": "product"'))) ecomScore += 5;
+    if (!hasSaasSchema && (content.includes('"@type":"offer"') || content.includes('"@type": "offer"'))) ecomScore += 3;
     if (content.includes('"localbusiness"') || content.includes('"restaurant"') ||
         content.includes('"dentist"') || content.includes('"medicalclinic"')) localScore += 5;
 
@@ -102,7 +117,7 @@ function detectSiteType(htmlFiles, rootDir) {
   }
 
   const types = [];
-  if (ecomScore >= 5) types.push('ecommerce');
+  if (ecomScore >= 10) types.push('ecommerce');
   if (localScore >= 5) types.push('local');
   return types;
 }

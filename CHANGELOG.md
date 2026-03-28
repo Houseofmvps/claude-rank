@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [1.9.2] — 2026-03-29
+
+### Fixed
+- **SaaS false positive** — vertical scanner no longer misclassifies SaaS sites as e-commerce (split strong/weak signals, raised threshold, skip SoftwareApplication pages)
+- **Content linking suggestions** — formatter now displays topic + pages correctly (was showing "undefined")
+- **Readability scores** — Flesch-Kincaid and Gunning Fog display actual values (was showing dashes)
+- **Keyword gap noise** — added 50+ stopwords and raised TF-IDF threshold to filter generic words from content gap suggestions
+
 ## [1.9.1] — 2026-03-29
 
 ### Fixed
@@ -112,6 +120,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Single dependency: htmlparser2
 - Node.js >= 18, ESM-only
 
+[1.9.2]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.2
 [1.9.1]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.1
 [1.9.0]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.9.0
 [1.8.0]: https://github.com/Houseofmvps/claude-rank/releases/tag/v1.8.0

@@ -330,6 +330,14 @@ const KEYWORD_STOP_WORDS = new Set([
   'like','back','even','still','know','take','come','made','find','first','last',
   'long','great','little','right','look','think','help','need','want','using',
   'page','click','site','website','read','many','good','best','free','work',
+  'love','hear','touch','shall','deserve','feel','dream','hope','believe',
+  'experience','discover','amazing','wonderful','truly','really','today',
+  'start','stop','keep','give','show','tell','turn','call','send','open',
+  'close','move','play','said','says','done','went','goes','going','must',
+  'let','put','run','set','try','ask','told','left','hold','bring',
+  'without','within','along','while','until','already','always','never',
+  'everything','nothing','something','someone','everyone','anyone',
+  'because','though','since','below','above','down','away','next','sure',
 ]);
 
 /**
@@ -595,7 +603,7 @@ export function analyzeKeywords(rootDir) {
     if (pages.length === 1) {
       const scores = tfidfScores.get(pages[0]);
       const score = scores ? (scores.get(kw) || 0) : 0;
-      if (score > 0.01) { // Only significant keywords
+      if (score > 0.05) { // Only significant keywords (higher threshold avoids noise)
         contentGaps.push({
           keyword: kw,
           currentPage: pages[0],

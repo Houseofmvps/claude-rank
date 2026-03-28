@@ -1,4 +1,4 @@
-# claude-rank v1.9.1
+# claude-rank v1.9.2
 
 claude-rank is a free, open-source Claude Code plugin with 170+ rules across 10 scanners for comprehensive search optimization, AI citability, keyword analysis, content briefs, performance, and security auditing.
 
