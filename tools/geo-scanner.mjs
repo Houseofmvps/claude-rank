@@ -1,5 +1,5 @@
 /**
- * geo-scanner.mjs — GEO (Generative Engine Optimization) scanner with 25 rules.
+ * geo-scanner.mjs — GEO (Generative Engine Optimization) scanner with 34 rules.
  * Scans a directory for AI search engine optimization signals and returns a
  * structured findings + score report.
  *
@@ -45,10 +45,21 @@ const RULES = {
   'missing-publication-date':   { severity: 'medium', deduction: 5 },
   'missing-breadcrumb-schema':  { severity: 'medium', deduction: 5 },
 
+  // Medium (-5) — new deeper rules
+  'js-rendered-content':        { severity: 'medium', deduction: 5 },
+  'no-faq-schema':              { severity: 'medium', deduction: 5 },
+  'no-howto-schema':            { severity: 'medium', deduction: 5 },
+  'no-meta-description-ai':     { severity: 'medium', deduction: 5 },
+  'no-canonical-url':           { severity: 'medium', deduction: 5 },
+  'no-lang-attribute':          { severity: 'medium', deduction: 5 },
+
   // Low (-2)
   'no-faq-section':             { severity: 'low', deduction: 2 },
   'content-not-citation-ready': { severity: 'low', deduction: 2 },
   'no-listicle-structure':      { severity: 'low', deduction: 2 },
+  'no-about-page':              { severity: 'low', deduction: 2 },
+  'no-internal-links':          { severity: 'low', deduction: 2 },
+  'short-meta-description':     { severity: 'low', deduction: 2 },
 };
 
 // ---------------------------------------------------------------------------
@@ -348,11 +359,26 @@ export function scanDirectory(rootDir) {
   let hasTimeElement = false;
   let hasDatePublished = false;
   let hasBreadcrumb = false;
+  let hasFaqSchema = false;
+  let hasHowToSchema = false;
+  let anyHasMetaDesc = false;
+  let anyHasCanonical = false;
+  let anyHasLang = false;
+  let jsOnlyPageCount = 0;
+  let anyHasAboutPage = false;
+  let totalInternalLinks = 0;
+  let shortMetaDescCount = 0;
   let avgParaWords = 0;
   let paraWordSamples = 0;
   const allRawHtml = [];
 
+  let scanIdx = 0;
   for (const filePath of htmlFiles) {
+    scanIdx++;
+    if (htmlFiles.length > 5) {
+      process.stderr.write(`\rScanning [${scanIdx}/${htmlFiles.length}]`);
+    }
+
     let raw;
     try {
       const sizeCheck = checkFileSize(filePath, fs.statSync);
@@ -379,15 +405,39 @@ export function scanDirectory(rootDir) {
     const pageTypes = extractSchemaTypes(state.jsonLdContent);
     for (const t of pageTypes) allSchemaTypes.add(t);
 
-    // Check for datePublished in JSON-LD
+    // Check for datePublished and schema types in JSON-LD
     for (const jsonStr of state.jsonLdContent) {
-      if (jsonStr.includes('datePublished')) {
-        hasDatePublished = true;
-      }
-      if (jsonStr.includes('BreadcrumbList')) {
-        hasBreadcrumb = true;
-      }
+      if (jsonStr.includes('datePublished')) hasDatePublished = true;
+      if (jsonStr.includes('BreadcrumbList')) hasBreadcrumb = true;
+      if (jsonStr.includes('FAQPage')) hasFaqSchema = true;
+      if (jsonStr.includes('HowTo')) hasHowToSchema = true;
     }
+
+    // Meta description
+    if (state.metaDescriptionText && state.metaDescriptionText.length > 0) {
+      anyHasMetaDesc = true;
+      if (state.metaDescriptionText.length < 70) shortMetaDescCount++;
+    }
+
+    // Canonical URL
+    if (state.hasCanonical) anyHasCanonical = true;
+
+    // Lang attribute
+    if (state.hasLang) anyHasLang = true;
+
+    // JS-only rendering detection: page has <script> but very low word count
+    // AI bots cannot render JavaScript — they see empty pages
+    if (state.wordCount < 50 && raw.includes('<script') && raw.includes('</script>')) {
+      jsOnlyPageCount++;
+    }
+
+    // About page detection
+    const relPath = path.relative(rootDir, filePath).toLowerCase();
+    if (relPath.includes('about')) anyHasAboutPage = true;
+
+    // Count internal links (href starting with / or relative)
+    const internalLinkMatches = raw.match(/href=["'](\/[^"']*|(?!https?:\/\/|mailto:|tel:)[^"']+)["']/gi);
+    if (internalLinkMatches) totalInternalLinks += internalLinkMatches.length;
 
     // Content pattern analysis against raw HTML / body text
     allRawHtml.push(raw);
@@ -427,6 +477,7 @@ export function scanDirectory(rootDir) {
       paraWordSamples++;
     }
   }
+  if (htmlFiles.length > 5) process.stderr.write('\r\x1b[K');
 
   // -------------------------------------------------------------------------
   // 4. Apply aggregate rules
@@ -500,6 +551,42 @@ export function scanDirectory(rootDir) {
     add('missing-breadcrumb-schema', 'No BreadcrumbList schema found — breadcrumbs help AI engines understand site structure');
   }
 
+  // Medium — JS-rendered content (AI bots can't render JS)
+  if (jsOnlyPageCount > 0) {
+    add('js-rendered-content', `${jsOnlyPageCount} page(s) appear to be JS-rendered with minimal HTML content — AI crawlers cannot execute JavaScript and will see empty pages`);
+  }
+
+  // Medium — FAQPage schema (separate from FAQ content pattern)
+  if (allH2Texts.some(isQuestionHeading) && !hasFaqSchema) {
+    add('no-faq-schema', 'Pages have FAQ-style content but no FAQPage schema — adding FAQPage JSON-LD significantly increases AI citation and rich result eligibility');
+  }
+
+  // Medium — HowTo schema
+  if (hasLists && !hasHowToSchema) {
+    // Only flag if content has procedural patterns
+    const hasProcedural = allRawHtml.some(html =>
+      /step\s*\d|how\s+to/i.test(html)
+    );
+    if (hasProcedural) {
+      add('no-howto-schema', 'Pages have how-to/step content but no HowTo schema — HowTo JSON-LD enables rich results and AI step-by-step citations');
+    }
+  }
+
+  // Medium — Meta description missing across all pages
+  if (!anyHasMetaDesc) {
+    add('no-meta-description-ai', 'No meta descriptions found — AI engines use meta descriptions as content summaries for citation context');
+  }
+
+  // Medium — Canonical URL
+  if (!anyHasCanonical && pageCount > 1) {
+    add('no-canonical-url', 'No canonical URLs found — AI crawlers may index duplicate content, diluting citation authority');
+  }
+
+  // Medium — Lang attribute
+  if (!anyHasLang) {
+    add('no-lang-attribute', 'No lang attribute on <html> — AI engines use lang to determine content language for multilingual citations');
+  }
+
   // Low
   // FAQ section — look for question-word H2/H3 followed by paragraph content
   const hasFaqPattern = allH2Texts.some(isQuestionHeading);
@@ -515,6 +602,21 @@ export function scanDirectory(rootDir) {
   // Lists
   if (!hasLists) {
     add('no-listicle-structure', 'No <ol> or <ul> elements found — list-based content is favored in AI-generated summaries');
+  }
+
+  // Low — About page
+  if (!anyHasAboutPage && pageCount > 3) {
+    add('no-about-page', 'No about page found — AI engines value E-E-A-T signals; an about page establishes author/brand credibility');
+  }
+
+  // Low — Internal linking
+  if (pageCount > 1 && totalInternalLinks / pageCount < 3) {
+    add('no-internal-links', `Average internal links per page is ${Math.round(totalInternalLinks / pageCount)} — AI engines use link context to understand content relationships (aim for ≥3)`);
+  }
+
+  // Low — Short meta descriptions
+  if (shortMetaDescCount > 0 && shortMetaDescCount >= pageCount / 2) {
+    add('short-meta-description', `${shortMetaDescCount} page(s) have meta descriptions under 70 chars — short descriptions provide insufficient context for AI citation`);
   }
 
   // -------------------------------------------------------------------------

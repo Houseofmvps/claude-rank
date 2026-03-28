@@ -158,6 +158,17 @@ if (isUrl) {
   // Directory-based scanning
   const targetDir = resolve(dir);
 
+  // Check if directory has any HTML files before scanning
+  const { findHtmlFiles } = await import(new URL('../tools/lib/html-parser.mjs', import.meta.url));
+  const htmlFiles = findHtmlFiles(targetDir);
+  if (htmlFiles.length === 0) {
+    console.error(`No HTML files found in ${targetDir}`);
+    console.error(`\nUsage: claude-rank scan <directory-with-html-files>`);
+    console.error(`       claude-rank scan <url>`);
+    console.error(`\nRun "claude-rank help" for all options.`);
+    process.exit(1);
+  }
+
   // --report html: run ALL scanners, generate HTML report
   if (reportFlag === 'html') {
     const { writeFileSync } = await import('node:fs');

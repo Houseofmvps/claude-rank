@@ -495,7 +495,12 @@ export function scanDirectory(rootDir) {
 
   // Parse all files
   const allStates = [];
+  let scanIdx = 0;
   for (const filePath of htmlFiles) {
+    scanIdx++;
+    if (htmlFiles.length > 5) {
+      process.stderr.write(`\rScanning [${scanIdx}/${htmlFiles.length}]`);
+    }
     const sizeCheck = checkFileSize(filePath, fs.statSync);
     if (!sizeCheck.ok) continue;
 
@@ -509,6 +514,7 @@ export function scanDirectory(rootDir) {
     const state = parseHtml(content);
     allStates.push({ filePath, state });
   }
+  if (htmlFiles.length > 5) process.stderr.write('\r\x1b[K');
 
   // Run per-file checks
   const perFileFindings = [];

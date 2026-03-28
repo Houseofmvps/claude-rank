@@ -13,7 +13,7 @@
 claude-rank/
 ├── bin/              # CLI entry point (claude-rank.mjs)
 ├── tools/            # Core scanning tools (seo-scanner, geo-scanner, aeo-scanner)
-│   └── lib/          # Shared utilities (security.mjs, file-utils.mjs, etc.)
+│   └── lib/          # Shared utilities (security.mjs, html-parser.mjs, etc.)
 ├── skills/           # Claude Code skill definitions (.md files, max 500 lines each)
 ├── agents/           # Autonomous agent definitions
 ├── commands/         # Slash command implementations
@@ -38,7 +38,7 @@ claude-rank/
 - Tools output JSON to stdout, exit code 0 on success
 - Use `execFileSync` only (never `execSync` with shell strings) to prevent injection
 - SSRF protection: always validate URLs via `tools/lib/security.mjs` before fetching
-- Always call `checkFileSize(path)` from `tools/lib/file-utils.mjs` before `readFileSync`
+- Always call `checkFileSize(path)` from `tools/lib/security.mjs` before `readFileSync`
 - Skill files: max 500 lines per SKILL.md
 
 ### Scoring System
