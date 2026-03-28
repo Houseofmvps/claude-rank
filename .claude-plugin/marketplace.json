@@ -11,7 +11,7 @@
     {
       "name": "claude-rank",
       "description": "Find out why AI won't cite your site — then fix it. SEO/GEO/AEO audit, auto-fix, keyword clustering, content briefs, E-E-A-T, schema validation.",
-      "version": "2.0.1",
+      "version": "2.0.2",
       "source": "./",
       "author": {
         "name": "Houseofmvps",
