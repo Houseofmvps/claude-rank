@@ -1,7 +1,7 @@
 {
-  "name": "@houseofmvps/claude-rank",
+  "name": "claude-rank",
   "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. Audit, fix, and dominate search.",
-  "version": "1.0.0",
+  "version": "1.4.1",
   "author": {
     "name": "Houseofmvps",
     "email": "houseofmvps2024@gmail.com"

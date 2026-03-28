@@ -95,7 +95,7 @@ npx @houseofmvps/claude-rank scan ./site --threshold 80  # CI/CD mode
 npm install -g @houseofmvps/claude-rank
 claude-rank scan ./my-project
 claude-rank scan https://example.com --pages 20
-claude-rank cwv https://example.com    # Core Web Vitals (requires Lighthouse)
+claude-rank cwv https://example.com    # Core Web Vitals (just needs Chrome)
 ```
 
 ### Use as a Claude Code Plugin
@@ -125,12 +125,12 @@ After installing, run `/reload-plugins` to activate in your current session.
 Once installed, use slash commands inside any Claude Code session:
 
 ```
-/rank          # Smart routing — detects what your project needs
-/rank audit    # Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC action plan
-/rank geo      # Deep AI search optimization audit
-/rank aeo      # Answer engine optimization audit
-/rank fix      # Auto-fix all findings in one command
-/rank schema   # Detect, validate, generate, inject JSON-LD
+/claude-rank:rank          # Smart routing — detects what your project needs
+/claude-rank:rank-audit    # Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC action plan
+/claude-rank:rank-geo      # Deep AI search optimization audit
+/claude-rank:rank-aeo      # Answer engine optimization audit
+/claude-rank:rank-fix      # Auto-fix all findings in one command
+/claude-rank:rank-schema   # Detect, validate, generate, inject JSON-LD
 ```
 
 **Zero configuration.** claude-rank reads your project structure and self-configures.
@@ -154,7 +154,7 @@ That's not an SEO problem. That's a visibility problem across every search surfa
 ## The Solution
 
 ```
-/rank audit
+/claude-rank:rank-audit
 ```
 
 One command. Three scanners run in parallel — SEO, GEO, and AEO. 80+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
@@ -166,7 +166,7 @@ AEO Score:   78/100  ██████████░░░░  (12 rules)
 Overall:     86/100  READY TO RANK
 ```
 
-**Score below 80?** Run `/rank fix` and it auto-generates what's missing — robots.txt, sitemap.xml, llms.txt, JSON-LD schema — then re-scans to show your improvement.
+**Score below 80?** Run `/claude-rank:rank-fix` and it auto-generates what's missing — robots.txt, sitemap.xml, llms.txt, JSON-LD schema — then re-scans to show your improvement.
 
 ---
 
@@ -209,10 +209,9 @@ Answer Engine Optimization. Featured snippets, People Also Ask, voice search.
 
 ### Core Web Vitals (Lighthouse)
 
-Optional performance scoring powered by Lighthouse:
+Performance scoring powered by Lighthouse. **No separate install needed** — uses `npx -y lighthouse@12` automatically. Just needs Chrome or Chromium on your machine.
 
 ```bash
-npm install -g lighthouse chrome-launcher    # One-time setup
 claude-rank cwv https://example.com          # Run CWV audit
 ```
 
@@ -224,7 +223,7 @@ claude-rank cwv https://example.com          # Run CWV audit
 | **TBT** | Total Blocking Time (proxy for INP) | < 200ms | > 600ms |
 | **SI** | Speed Index | < 3.4s | > 5.8s |
 
-Graceful fallback: if Lighthouse isn't installed, claude-rank tells the user how to enable it. No crashes.
+Graceful fallback: if Chrome isn't found, claude-rank tells the user how to enable it. No crashes.
 
 ### Auto-Fix Generators
 
@@ -343,12 +342,12 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 
 | Command | Description |
 |---------|-------------|
-| `/rank` | Smart routing — detects what your project needs |
-| `/rank audit` | Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC/Bing action plan |
-| `/rank geo` | Deep GEO audit targeting AI search visibility |
-| `/rank aeo` | Answer engine optimization audit |
-| `/rank fix` | Auto-fix all findings in one command |
-| `/rank schema` | Detect, validate, generate, inject JSON-LD |
+| `/claude-rank:rank` | Smart routing — detects what your project needs |
+| `/claude-rank:rank-audit` | Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC/Bing action plan |
+| `/claude-rank:rank-geo` | Deep GEO audit targeting AI search visibility |
+| `/claude-rank:rank-aeo` | Answer engine optimization audit |
+| `/claude-rank:rank-fix` | Auto-fix all findings in one command |
+| `/claude-rank:rank-schema` | Detect, validate, generate, inject JSON-LD |
 
 ---
 
@@ -408,7 +407,7 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 | Category | Count | Highlights |
 |---|---|---|
 | **Tools** | 9 | SEO scanner (39 rules), GEO scanner (25 rules), AEO scanner (12 rules), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
-| **Skills** | 6 | /rank, /rank audit, /rank geo, /rank aeo, /rank fix, /rank schema |
+| **Skills** | 6 | /claude-rank:rank, /claude-rank:rank-audit, /claude-rank:rank-geo, /claude-rank:rank-aeo, /claude-rank:rank-fix, /claude-rank:rank-schema |
 | **Agents** | 4 | SEO auditor (project-type-aware), GEO auditor (AI readiness levels), AEO auditor (snippet opportunities), Schema auditor (Google validation) |
 | **Commands** | 6 | All slash commands above |
 | **Research** | 3 | SEO benchmarks, GEO research, schema catalog |
