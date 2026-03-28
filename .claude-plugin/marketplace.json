@@ -11,7 +11,7 @@
     {
       "name": "claude-rank",
       "description": "SEO/GEO/AEO audit + auto-fix + Core Web Vitals + schema validation + GSC/Bing action plans",
-      "version": "1.4.1",
+      "version": "1.5.0",
       "source": "./",
       "author": {
         "name": "Houseofmvps",
