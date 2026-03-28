@@ -4,7 +4,7 @@
 - **Name**: claude-rank
 - **npm**: `claude-rank` (published under Houseofmvps)
 - **GitHub**: https://github.com/Houseofmvps/claude-rank
-- **Description**: The most comprehensive SEO/GEO/AEO plugin for Claude Code. Audit, fix, and dominate search — traditional and AI.
+- **Description**: Claude Code plugin that tells you why your site won't get cited by AI — and fixes the discoverability files automatically.
 - **License**: MIT
 
 ## Architecture

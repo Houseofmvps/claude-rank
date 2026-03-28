@@ -1,10 +1,10 @@
 # claude-rank v2.0.0
 
-claude-rank is a free, open-source Claude Code plugin with 175+ rules across 10 scanners for comprehensive search optimization, AI citability, keyword analysis, content briefs, performance, mobile, and security auditing. All commands accept URLs or local directories.
+claude-rank is a free, open-source Claude Code plugin that tells you why your site won't get cited by AI — and fixes the discoverability files automatically. 170+ rules across 10 scanners for search optimization, AI citability, keyword analysis, content briefs, performance, mobile, and security auditing. All commands accept URLs or local directories.
 
 ## Scanners
 
-- **SEO Scanner** (50 rules): Meta tags, title/description validation, heading hierarchy, canonical URLs, robots.txt, sitemap.xml, structured data (JSON-LD), Open Graph, Twitter Cards, hreflang, image alt text, internal linking, broken link detection, page speed signals
+- **SEO Scanner** (54 rules): Meta tags, title/description validation, heading hierarchy, canonical URLs, robots.txt, sitemap.xml, structured data (JSON-LD), Open Graph, Twitter Cards, hreflang, image alt text, internal linking, broken link detection, page speed signals
 - **GEO Scanner** (45 rules): AI-crawler accessibility (GPTBot, ClaudeBot, PerplexityBot), llms.txt presence, structured content density, citation-friendly formatting, entity clarity, factual density scoring, knowledge graph readiness, E-E-A-T scoring (author bio, credentials, trust signals)
 - **AEO Scanner** (12 rules): Featured snippet eligibility, FAQ schema, HowTo schema, speakable schema, People Also Ask optimization, concise answer blocks, question-keyword targeting
 - **AI Citability Scorer** (7 dimensions): Measures how likely AI models are to cite your content across authority, uniqueness, structure, freshness, depth, attribution, and accessibility

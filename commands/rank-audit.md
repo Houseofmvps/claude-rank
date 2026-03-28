@@ -12,7 +12,7 @@ Directory defaults to `.` (current directory) if omitted.
 
 ## What It Does
 
-1. Runs SEO scanner (39+ rules), GEO scanner (34 rules), AEO scanner (12 rules)
+1. Runs all 10 scanners: SEO (54 rules), GEO (45 rules), AEO (12 rules), Citability (7 dimensions), Content, Keywords, Performance (21 rules), Vertical (20 rules), Security (15 rules), Content Brief
 2. Reports findings grouped by severity
 3. Auto-fixes: generates robots.txt, sitemap.xml, llms.txt, JSON-LD schema
 4. Re-scans to verify improvements

@@ -64,9 +64,9 @@ describe('formatSeoReport score display', () => {
     assert.ok(out.includes('72'), 'Expected score 72 in output');
   });
 
-  it('contains files scanned count', () => {
+  it('contains pages scanned count', () => {
     const out = stripAnsi(formatSeoReport(makeScanResult({ filesScanned: 26 })));
-    assert.ok(out.includes('Files scanned:') && out.includes('26'), 'Expected files scanned count');
+    assert.ok(out.includes('Pages scanned:') && out.includes('26'), 'Expected pages scanned count');
   });
 });
 
@@ -83,7 +83,7 @@ describe('formatSeoReport findings grouping', () => {
     ];
     const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
     assert.ok(out.includes('title-too-long'), 'Expected rule name');
-    assert.ok(out.includes('(3 pages)'), 'Expected grouped page count');
+    assert.ok(out.includes('3 pages'), 'Expected grouped page count');
   });
 
   it('does not show page count for single-file findings', () => {
@@ -95,13 +95,13 @@ describe('formatSeoReport findings grouping', () => {
     assert.ok(!out.includes('pages)'), 'Should not show page count for single file');
   });
 
-  it('shows +N more for many files', () => {
+  it('shows page count for many files', () => {
     const findings = [];
     for (let i = 0; i < 6; i++) {
       findings.push({ rule: 'missing-alt', severity: 'medium', file: `img${i}.html`, message: 'Missing alt' });
     }
     const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
-    assert.ok(out.includes('+3 more'), 'Expected +3 more for 6 files with max 3 shown');
+    assert.ok(out.includes('6 pages'), 'Expected page count for 6 files');
   });
 });
 
@@ -168,7 +168,7 @@ describe('formatSeoReport fix hints', () => {
       { rule: 'thin-content', severity: 'high', file: 'page.html', message: 'Too thin' },
     ];
     const out = stripAnsi(formatSeoReport(makeScanResult({ findings })));
-    assert.ok(out.includes('Next Steps'), 'Expected Next Steps section');
+    assert.ok(out.includes('What to Do Next'), 'Expected What to Do Next section');
   });
 });
 

@@ -1,14 +1,14 @@
 ---
 name: rank-perf
-description: Performance risk assessment from HTML structure — no Chrome needed.
+description: Performance and mobile-first indexing audit from HTML — no Chrome needed.
 ---
 
-# Performance Scanner
+# Performance + Mobile Scanner (21 rules)
 
-Assess performance risks from static HTML analysis. No Chrome or Lighthouse needed.
+Assess performance risks and mobile-first indexing issues from static HTML. No Chrome needed.
 
 ```bash
-node ${CLAUDE_PLUGIN_ROOT}/tools/perf-scanner.mjs <directory>
+node ${CLAUDE_PLUGIN_ROOT}/tools/perf-scanner.mjs <directory|url>
 ```
 
 Checks include:
@@ -22,5 +22,10 @@ Checks include:
 - Mixed content (HTTP resources on HTTPS page)
 - Too many external script domains
 - Missing preconnect hints
+- Missing viewport meta tag (mobile-first indexing)
+- Non-responsive viewport (fixed width instead of device-width)
+- Small tap targets (<44px on interactive elements)
+- Small font sizes (<12px)
+- Fixed-width elements (>500px causing horizontal scroll)
 
 Present findings with severity and fix suggestions.

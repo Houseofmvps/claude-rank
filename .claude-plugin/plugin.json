@@ -1,6 +1,6 @@
 {
   "name": "claude-rank",
-  "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. Audit, fix, and dominate search.",
+  "description": "Claude Code plugin that tells you why your site won't get cited by AI — and fixes the discoverability files automatically.",
   "version": "2.0.0",
   "author": {
     "name": "Houseofmvps",

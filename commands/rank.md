@@ -13,7 +13,7 @@ description: "SEO/GEO/AEO audit, analysis, and optimization. The most comprehens
 | Subcommand | Description |
 |---|---|
 | *(none)* | Quick health check — shows SEO, GEO, AEO scores |
-| `audit` | Full 9-phase audit with auto-fix + GSC action plan |
+| `audit` | Full 10-scanner audit with auto-fix + GSC action plan |
 | `geo` | AI search optimization (ChatGPT, Perplexity, Gemini) |
 | `aeo` | Answer engine optimization (snippets, voice, PAA) |
 | `fix` | Auto-fix all findings in one command |

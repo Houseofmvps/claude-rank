@@ -2,7 +2,9 @@
 
 <img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
 
-### The most comprehensive SEO/GEO/AEO plugin for Claude Code. 175+ rules. 10 scanners. URL + directory scanning. Mobile-first checks. GSC integration. Dominate search — traditional and AI.
+### A Claude Code plugin that tells you why your site won't get cited by AI — and fixes the boring discoverability files automatically.
+
+**170+ rules. 10 scanners. URL + directory scanning. Auto-fix for robots.txt, sitemap.xml, llms.txt, and JSON-LD.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Houseofmvps/claude-rank/ci.yml?style=for-the-badge&logo=github&label=CI)](https://github.com/Houseofmvps/claude-rank/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -138,11 +140,11 @@ That's not an SEO problem. That's a visibility problem across every search surfa
 One command. Ten scanners run in parallel — SEO, GEO, AEO, AI Citability, Content Intelligence, Keyword Clustering, Performance, Vertical SEO, Security, and Content Brief. 170+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
 
 ```
-SEO Score:         87/100  ████████████░░  (50 rules)
+SEO Score:         87/100  ████████████░░  (54 rules)
 GEO Score:         92/100  █████████████░  (45 rules + E-E-A-T)
 AEO Score:         78/100  ██████████░░░░  (12 rules)
 Citability Score:  65/100  ████████░░░░░░  (7 dimensions)
-Performance:       90/100  █████████████░  (16 rules)
+Performance:       90/100  █████████████░  (21 rules)
 Security:          80/100  ███████████░░░  (15 rules)
 Overall:           86/100  READY TO RANK
 ```
@@ -153,7 +155,7 @@ Overall:           86/100  READY TO RANK
 
 ## All 10 Scanners
 
-### 1. SEO Scanner — 50 Rules
+### 1. SEO Scanner — 54 Rules
 
 Traditional search optimization. The foundation.
 
@@ -242,7 +244,7 @@ Generate SEO-optimized writing briefs from your existing content.
 
 ### 8. Performance + Mobile Scanner — 21 Rules
 
-Performance and mobile-first indexing checks from static HTML — no Chrome needed.
+Performance and mobile-first indexing checks from static HTML. No Chrome needed.
 
 | Category | What it checks |
 |---|---|
@@ -395,7 +397,7 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 
 | Command | Description |
 |---------|-------------|
-| `scan ./project` | SEO scan — 50 rules |
+| `scan ./project` | SEO scan — 54 rules |
 | `scan https://example.com` | Crawl + scan live site (up to 50 pages) |
 | `geo ./project` or `geo https://...` | GEO — AI search optimization (45 rules + E-E-A-T) |
 | `aeo ./project` or `aeo https://...` | AEO — answer engine optimization (12 rules) |
@@ -420,7 +422,7 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 
 | Feature | claude-rank | claude-seo |
 |---------|:-----------:|:----------:|
-| SEO rules | 50 | ~20 |
+| SEO rules | 54 | ~20 |
 | GEO — AI search (Perplexity, ChatGPT, Gemini) | 45 rules + E-E-A-T | Basic |
 | AEO — featured snippets, voice search | 12 rules | None |
 | AI Citability Score (7-dimension) | Yes | No |
@@ -481,7 +483,7 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 | Category | Count |
 |---|---|
 | **Scanners** | 10 (SEO, GEO, AEO, Citability, Content, Keywords, Briefs, Perf+Mobile, Vertical, Security) |
-| **Rules** | 175+ across all scanners |
+| **Rules** | 170+ across all scanners |
 | **Tools** | 18 (scanners + GSC analyzer + schema engine + robots/sitemap/llms.txt + competitive X-ray + formatter) |
 | **CLI Commands** | 16 (all accept URLs) |
 | **Agents** | 9 autonomous auditors |

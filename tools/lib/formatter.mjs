@@ -1,5 +1,6 @@
 /**
- * formatter.mjs — Professional terminal output for claude-rank CLI reports.
+ * formatter.mjs — Premium terminal output for claude-rank CLI reports.
+ * Designed for SEO specialists, not developers.
  * No external dependencies — uses raw ANSI escape codes.
  */
 
@@ -23,6 +24,7 @@ const c = {
   bgGreen: s => `\x1b[42m\x1b[30m${s}\x1b[0m`,
   bgBlue: s => `\x1b[44m\x1b[37m${s}\x1b[0m`,
   bgCyan: s => `\x1b[46m\x1b[30m${s}\x1b[0m`,
+  bgMagenta: s => `\x1b[45m\x1b[37m${s}\x1b[0m`,
 };
 
 /** Strip ANSI codes for accurate length measurement */
@@ -36,6 +38,147 @@ function pad(str, len) {
   return str + ' '.repeat(Math.max(0, len - visible));
 }
 
+// ---------------------------------------------------------------------------
+// Box-drawing primitives
+// ---------------------------------------------------------------------------
+
+const BOX = {
+  h: '\u2500', H: '\u2501',  // light/heavy horizontal
+  tl: '\u256D', tr: '\u256E', bl: '\u2570', br: '\u256F', // rounded corners
+  v: '\u2502',               // vertical
+};
+
+function boxTop(width) {
+  return c.dim(`  ${BOX.tl}${BOX.h.repeat(width)}${BOX.tr}`);
+}
+function boxBot(width) {
+  return c.dim(`  ${BOX.bl}${BOX.h.repeat(width)}${BOX.br}`);
+}
+function boxDiv(width) {
+  return c.dim(`  ${BOX.v}${BOX.h.repeat(width)}${BOX.v}`);
+}
+function boxRow(content, width) {
+  const vis = stripAnsi(content).length;
+  const padding = Math.max(0, width - vis - 2);
+  return c.dim(`  ${BOX.v}`) + ` ${content}` + ' '.repeat(padding) + c.dim(BOX.v);
+}
+
+const W = 58; // standard box width
+
+// ---------------------------------------------------------------------------
+// Human-readable rule names (SEO specialists don't think in kebab-case)
+// ---------------------------------------------------------------------------
+
+const DISPLAY_NAMES = {
+  // SEO
+  'missing-title':             'Missing Page Title',
+  'missing-meta-description':  'Missing Meta Description',
+  'missing-h1':                'Missing H1 Heading',
+  'thin-content':              'Thin Content',
+  'missing-viewport':          'Missing Viewport Tag',
+  'missing-og-title':          'Missing Open Graph Title',
+  'missing-og-description':    'Missing Open Graph Description',
+  'missing-og-image':          'Missing Open Graph Image',
+  'missing-og-url':            'Missing Open Graph URL',
+  'missing-canonical':         'Missing Canonical URL',
+  'missing-json-ld':           'Missing Structured Data',
+  'missing-favicon':           'Missing Favicon',
+  'no-analytics':              'No Analytics Installed',
+  'missing-twitter-card':      'Missing Twitter Card',
+  'missing-twitter-image':     'Missing Twitter Image',
+  'missing-lang':              'Missing Language Attribute',
+  'missing-charset':           'Missing Character Encoding',
+  'no-manifest':               'Missing Web App Manifest',
+  'missing-main-landmark':     'Missing <main> Landmark',
+  'missing-nav-landmark':      'Missing <nav> Landmark',
+  'missing-footer-landmark':   'Missing <footer> Landmark',
+  'images-missing-alt':        'Images Missing Alt Text',
+  'images-missing-dimensions': 'Images Missing Dimensions',
+  'viewport-not-responsive':   'Non-Responsive Viewport',
+  'has-noindex':               'Page Blocked by Noindex',
+  'schema-invalid':            'Invalid Structured Data',
+  'multiple-h1':               'Multiple H1 Headings',
+  'title-too-long':            'Title Too Long (60+ chars)',
+  'title-too-short':           'Title Too Short (<20 chars)',
+  'all-scripts-blocking':      'All Scripts Render-Blocking',
+  'title-content-mismatch':    'Title Doesn\'t Match Content',
+  'meta-content-mismatch':     'Meta Description Doesn\'t Match Content',
+  'duplicate-title':           'Duplicate Page Title',
+  'duplicate-meta-description':'Duplicate Meta Description',
+  'broken-internal-link':      'Broken Internal Link',
+  // Content
+  'no-hub-page':               'No Hub/Pillar Page',
+  'orphan-content':            'Orphan Page (No Internal Links)',
+  'thin-pages':                'Pages with Thin Content',
+  'low-readability':           'Hard to Read',
+  'high-passive-voice':        'Too Much Passive Voice',
+  'wall-of-text':              'Wall of Text (No Breaks)',
+  'duplicate-content':         'Duplicate Content Detected',
+  // GEO
+  'missing-robots-txt':        'Missing robots.txt',
+  'missing-sitemap':           'Missing Sitemap',
+  'missing-llms-txt':          'Missing llms.txt',
+  'bot-blocked':               'AI Bots Blocked',
+  'no-ai-bot-rules':           'No AI Bot Rules in robots.txt',
+  'missing-org-schema':        'Missing Organization Schema',
+  'missing-author-schema':     'Missing Author Attribution',
+  'thin-content-ai':           'Too Thin for AI Citation',
+  'no-question-headers':       'No Question-Style Headings',
+  'no-definition-patterns':    'No Clear Definitions',
+  'no-data-tables':            'No Data Tables',
+  'content-not-citation-ready':'Content Not Citation-Ready',
+  'no-direct-answer':          'No Direct Answer in Opening',
+  'no-statistics':             'No Statistics or Data Points',
+  // Performance
+  'images-no-dimensions':      'Images Cause Layout Shift (CLS)',
+  'no-font-display-swap':      'Fonts Block Page Render',
+  'excessive-blocking-scripts':'Too Many Blocking Scripts',
+  'large-inline-css':          'Large Inline CSS (Uncacheable)',
+  'large-inline-js':           'Large Inline JS (Uncacheable)',
+  'no-resource-hints':         'No Resource Preloading',
+  'no-lazy-loading':           'Images Not Lazy-Loaded',
+  'no-fetchpriority':          'LCP Image Not Prioritized',
+  'mixed-content-risk':        'Mixed Content (HTTP on HTTPS)',
+  'no-responsive-images':      'No Responsive Images',
+  'no-modern-image-format':    'No Modern Image Formats',
+  'no-image-sizes':            'Missing Image Sizes Attribute',
+  'no-mobile-viewport':        'No Mobile Viewport',
+  'small-tap-targets':         'Tap Targets Too Small',
+  'small-font-size':           'Font Size Too Small for Mobile',
+  'fixed-width-elements':      'Fixed-Width Elements (Overflow)',
+  // Security
+  'http-only-links':           'Insecure HTTP Links',
+  'mixed-content-scripts':     'Mixed Content Scripts',
+  'no-csp-meta':               'No Content Security Policy',
+  'no-referrer-policy':        'No Referrer Policy',
+  'external-scripts-no-integrity': 'External Scripts Without SRI',
+  'inline-event-handlers':     'Inline Event Handlers',
+  'external-links-no-noopener':'External Links Missing rel=noopener',
+  'iframe-no-sandbox':         'Iframes Without Sandbox',
+  // AEO
+  'missing-faq-schema':        'Missing FAQ Schema',
+  'missing-howto-schema':      'Missing HowTo Schema',
+  'missing-speakable-schema':  'Missing Speakable Schema',
+  'no-snippet-answers':        'No Featured Snippet Answers',
+  'missing-content-schema':    'Missing Article/WebPage Schema',
+  'missing-llms-txt-aeo':      'Missing llms.txt (Answer Engines)',
+  'answers-too-long':          'Answers Too Long for Snippets',
+  'no-numbered-steps':         'No Numbered Steps/Lists',
+  'no-voice-friendly-content': 'Not Voice-Search Friendly',
+  'no-paa-patterns':           'No "People Also Ask" Patterns',
+  // E-E-A-T
+  'no-author-bio':             'No Author Bio',
+  'no-credentials':            'No Author Credentials',
+  'no-about-author-link':      'No Link to About/Team Page',
+  'no-review-trust-signals':   'No Trust Signals (Reviews, Badges)',
+  'no-external-authority-links':'No Citations to Authority Sources',
+};
+
+/** Get human-readable name for a rule, fallback to title-cased ID */
+function displayName(rule) {
+  if (DISPLAY_NAMES[rule]) return DISPLAY_NAMES[rule];
+  return rule.replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
 
 // ---------------------------------------------------------------------------
 // Score display
@@ -57,8 +200,7 @@ function scoreLabel(score) {
   return c.red('Poor');
 }
 
-function scoreBar(score) {
-  const width = 20;
+function scoreBar(score, width = 20) {
   const filled = Math.round((score / 100) * width);
   const empty = width - filled;
   const barChar = '\u2501'; // heavy horizontal line
@@ -98,6 +240,17 @@ function severityIcon(severity) {
     case 'medium':   return c.yellow('\u25CB'); // circle
     case 'low':      return c.dim('\u2022'); // bullet
     default:         return ' ';
+  }
+}
+
+/** Colored severity pill — compact and scannable */
+function severityPill(severity) {
+  switch (severity) {
+    case 'critical': return c.bgRed(' CRITICAL ');
+    case 'high':     return c.bgRed('  HIGH  ');
+    case 'medium':   return c.bgYellow(' MEDIUM ');
+    case 'low':      return c.dim('  LOW  ');
+    default:         return c.dim(`  ${severity.toUpperCase()}  `);
   }
 }
 
@@ -246,6 +399,85 @@ function formatFileList(files, max = 3) {
 }
 
 // ---------------------------------------------------------------------------
+// Premium report header — used by all scanner reports
+// ---------------------------------------------------------------------------
+
+function premiumHeader(title, subtitle) {
+  const lines = [];
+  lines.push('');
+  lines.push(boxTop(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold(c.cyan('claude-rank'))}  ${c.dim(BOX.v)}  ${c.bold(title)}`, W));
+  if (subtitle) {
+    lines.push(boxRow(`  ${c.dim(subtitle)}`, W));
+  }
+  lines.push(boxRow('', W));
+  return lines;
+}
+
+function premiumScore(lines, score, filesScanned, summary) {
+  const grade = gradeFor(score);
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${grade.color(` ${grade.letter} `)}  ${c.bold(String(score))} / 100   ${scoreBar(score)}   ${scoreLabel(score)}`, W));
+  lines.push(boxRow('', W));
+
+  // Summary counts on clean separate lines
+  const counts = [];
+  if (summary.critical > 0) counts.push(c.red(`${summary.critical} critical`));
+  if (summary.high > 0) counts.push(c.red(`${summary.high} high`));
+  if (summary.medium > 0) counts.push(c.yellow(`${summary.medium} medium`));
+  if (summary.low > 0) counts.push(c.dim(`${summary.low} low`));
+
+  lines.push(boxRow(`  ${c.dim('Pages scanned:')} ${c.bold(String(filesScanned))}`, W));
+  if (counts.length > 0) {
+    lines.push(boxRow(`  ${c.dim('Issues found:')}  ${counts.join(c.dim('  \u2022  '))}`, W));
+  } else {
+    lines.push(boxRow(`  ${c.dim('Issues found:')}  ${c.green('None')}`, W));
+  }
+  lines.push(boxRow('', W));
+}
+
+/** Render a findings section (Must Fix / Should Fix / Nice to Have) */
+function premiumFindings(lines, groups, sectionTitle, sectionColor) {
+  if (groups.length === 0) return;
+
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold(sectionColor(sectionTitle))} ${c.dim(`(${groups.length})`)}`, W));
+  lines.push(boxRow('', W));
+
+  for (const g of groups) {
+    const name = displayName(g.rule);
+    const pill = severityPill(g.severity);
+    const pageCount = g.files.length > 1 ? c.dim(` \u00B7 ${g.files.length} pages`) : '';
+    lines.push(boxRow(`  ${pill}  ${c.bold(name)}${pageCount}`, W));
+    lines.push(boxRow(`           ${g.message}`, W));
+    const hint = FIX_HINTS[g.rule];
+    if (hint) {
+      lines.push(boxRow(`           ${c.cyan('\u2192')} ${c.cyan(hint)}`, W));
+    }
+    if (g.files.length > 0 && g.files.length <= 3) {
+      lines.push(boxRow(`           ${c.dim(formatFileList(g.files))}`, W));
+    }
+    lines.push(boxRow(`           ${c.dim(`rule: ${g.rule}`)}`, W));
+    lines.push(boxRow('', W));
+  }
+}
+
+function premiumNextSteps(lines, steps) {
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold('What to Do Next')}`, W));
+  lines.push(boxRow('', W));
+  for (let i = 0; i < steps.length; i++) {
+    lines.push(boxRow(`  ${c.cyan(`${i + 1}.`)} ${steps[i]}`, W));
+  }
+  lines.push(boxRow('', W));
+  lines.push(boxBot(W));
+}
+
+// ---------------------------------------------------------------------------
 // Main report formatter
 // ---------------------------------------------------------------------------
 
@@ -260,110 +492,46 @@ function formatReport(result, title, scoreKey, scannerType) {
   const groups = groupFindings(findings);
   groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
 
-  const grade = gradeFor(score);
-  const lines = [];
-
-  // ── Header ──────────────────────────────────────────────
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold(title)}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-
-  // ── Score ───────────────────────────────────────────────
-  lines.push('');
-  lines.push(`  ${grade.color(` ${score} `)}  ${scoreBar(score)}  ${scoreLabel(score)}`);
-  lines.push('');
-  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}    ${summary.critical > 0 ? c.red(`Critical: ${summary.critical}`) : c.dim(`Critical: ${summary.critical}`)}  ${summary.high > 0 ? c.red(`High: ${summary.high}`) : c.dim(`High: ${summary.high}`)}  ${summary.medium > 0 ? c.yellow(`Medium: ${summary.medium}`) : c.dim(`Medium: ${summary.medium}`)}  ${c.dim(`Low: ${summary.low}`)}`);
+  const lines = premiumHeader(title);
+  premiumScore(lines, score, filesScanned, summary);
 
   // ── No findings ─────────────────────────────────────────
   if (groups.length === 0) {
-    lines.push('');
-    lines.push(`  ${c.green('\u2714')} ${c.bold(c.green('All checks passed!'))} No issues found.`);
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.green('\u2714')} ${c.bold(c.green('All checks passed!'))} No issues found.`, W));
+    lines.push(boxRow('', W));
+    lines.push(boxBot(W));
     lines.push('');
     return lines.join('\n');
   }
 
-  // ── Critical & High (must fix) ──────────────────────────
+  // ── Grouped findings ────────────────────────────────────
   const critical = groups.filter(g => g.severity === 'critical' || g.severity === 'high');
   const medium = groups.filter(g => g.severity === 'medium');
   const low = groups.filter(g => g.severity === 'low');
 
-  if (critical.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
-    lines.push('');
-    for (const g of critical) {
-      const badge = severityBadge(g.severity);
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`              ${g.message}`);
-      if (hint) {
-        lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      }
-      if (g.files.length > 0) {
-        lines.push(`              ${c.dim(formatFileList(g.files))}`);
-      }
-      lines.push('');
-    }
-  }
-
-  // ── Medium (should fix) ─────────────────────────────────
-  if (medium.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
-    lines.push('');
-    for (const g of medium) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`     ${g.message}`);
-      if (hint) {
-        lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      }
-      if (g.files.length > 1) {
-        lines.push(`     ${c.dim(formatFileList(g.files))}`);
-      }
-      lines.push('');
-    }
-  }
-
-  // ── Low (nice to have) ─────────────────────────────────
-  if (low.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
-    lines.push('');
-    for (const g of low) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
-      lines.push(`     ${c.dim(g.message)}`);
-      if (hint) {
-        lines.push(`     ${c.dim('\u2192 ' + hint)}`);
-      }
-      lines.push('');
-    }
-  }
+  premiumFindings(lines, critical, '\u2718 Must Fix', c.red);
+  premiumFindings(lines, medium, '\u25CB Should Fix', c.yellow);
+  premiumFindings(lines, low, '\u2022 Nice to Have', s => c.dim(s));
 
   // ── Next steps ──────────────────────────────────────────
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
+  const steps = [];
   if (critical.length > 0) {
-    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} issues first — they have the biggest impact`);
+    steps.push(`Fix ${c.bold(`${critical.length} critical/high`)} issues first — biggest ranking impact`);
   }
   if (medium.length > 0) {
-    const step = critical.length > 0 ? '2.' : '1.';
-    lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues for a solid foundation`);
+    steps.push(`Address ${c.bold(`${medium.length} medium`)} issues for a solid foundation`);
   }
   if (scannerType === 'seo') {
-    lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank geo .')} to check AI search readiness`);
-    lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank compete <url> .')} to compare vs competitors`);
+    steps.push(`Run ${c.bold('claude-rank geo .')} to check AI search readiness`);
+    steps.push(`Run ${c.bold('claude-rank compete <url> .')} to compare vs competitors`);
   } else if (scannerType === 'geo') {
-    lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank aeo .')} to optimize for featured snippets`);
+    steps.push(`Run ${c.bold('claude-rank aeo .')} to optimize for featured snippets`);
   } else if (scannerType === 'aeo') {
-    lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('/claude-rank:rank-fix')} to auto-fix all findings`);
+    steps.push(`Run ${c.bold('/claude-rank:rank-fix')} to auto-fix all findings`);
   }
+  premiumNextSteps(lines, steps);
   lines.push('');
 
   return lines.join('\n');
@@ -394,30 +562,26 @@ export function formatCompeteReport(result) {
     return `\n  ${c.red('\u2718')} ${result.error}\n`;
   }
 
-  const lines = [];
   const { youWins, themWins, ties } = result.summary;
+  const lines = premiumHeader('Competitive X-Ray', 'Head-to-head SEO signal comparison');
 
-  // ── Header ──────────────────────────────────────────────
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Competitive X-Ray')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(56)));
-  lines.push('');
-  lines.push(`  ${c.bold('You:')}   ${result.you.title || result.you.directory}`);
-  lines.push(`  ${c.bold('Them:')}  ${result.competitor.title || result.competitor.url}`);
-
-  // ── Score ───────────────────────────────────────────────
-  lines.push('');
+  // ── Matchup ─────────────────────────────────────────────
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold('You:')}   ${result.you.title || result.you.directory}`, W));
+  lines.push(boxRow(`  ${c.bold('Them:')}  ${result.competitor.title || result.competitor.url}`, W));
+  lines.push(boxRow('', W));
   const youColor = youWins >= themWins ? c.green : c.red;
   const themColor = themWins >= youWins ? c.red : c.green;
-  lines.push(`  ${youColor(`You ${youWins}`)}  ${c.dim('vs')}  ${themColor(`Them ${themWins}`)}  ${c.dim(`(${ties} ties)`)}`);
-  lines.push('');
-  lines.push(`  ${c.bold(result.headline)}`);
+  lines.push(boxRow(`  ${youColor(`You ${youWins}`)}  ${c.dim('vs')}  ${themColor(`Them ${themWins}`)}  ${c.dim(`(${ties} ties)`)}`, W));
+  lines.push(boxRow(`  ${c.bold(result.headline)}`, W));
+  lines.push(boxRow('', W));
 
   // ── Signal comparison table ─────────────────────────────
-  lines.push('');
-  lines.push(c.dim('  ' + '\u2500'.repeat(56)));
-  lines.push(`  ${pad(c.bold('Signal'), 26)} ${pad(c.bold('You'), 12)} ${pad(c.bold('Them'), 12)} ${c.bold('Result')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(56)));
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${pad(c.bold('Signal'), 24)} ${pad(c.bold('You'), 10)} ${pad(c.bold('Them'), 10)} ${c.bold('Result')}`, W));
+  lines.push(boxRow(`  ${c.dim(BOX.h.repeat(52))}`, W));
 
   for (const v of result.verdicts) {
     const icon = v.winner === 'you'  ? c.green('\u2714') :
@@ -426,72 +590,71 @@ export function formatCompeteReport(result) {
     const label = v.winner === 'you'  ? c.green('You') :
                   v.winner === 'them' ? c.red('Them') :
                   c.dim('Tie');
-    lines.push(`  ${pad(v.area, 24)} ${pad(String(v.you), 10)} ${pad(String(v.them), 10)} ${icon} ${label}`);
+    lines.push(boxRow(`  ${pad(v.area, 22)} ${pad(String(v.you), 8)} ${pad(String(v.them), 8)} ${icon} ${label}`, W));
   }
-  lines.push(c.dim('  ' + '\u2500'.repeat(56)));
+  lines.push(boxRow('', W));
 
   // ── Tech stack ──────────────────────────────────────────
   if (result.competitor.techStack.length > 0 || result.you.techStack.length > 0) {
-    lines.push('');
-    lines.push(`  ${c.bold('Tech Stack')}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Tech Stack')}`, W));
+    lines.push(boxRow('', W));
     if (result.you.techStack.length > 0) {
       for (const t of result.you.techStack) {
-        lines.push(`  ${c.green('\u2022')} ${t.tech} ${c.dim(`(${t.category})`)}`);
+        lines.push(boxRow(`  ${c.green('\u2022')} ${t.tech} ${c.dim(`(${t.category})`)}`, W));
       }
     } else {
-      lines.push(`  ${c.dim('  No technologies detected in your project')}`);
+      lines.push(boxRow(`  ${c.dim('No technologies detected in your project')}`, W));
     }
-    lines.push('');
-    lines.push(`  ${c.bold('Competitor:')}`);
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Competitor:')}`, W));
     if (result.competitor.techStack.length > 0) {
       for (const t of result.competitor.techStack) {
-        lines.push(`  ${c.red('\u2022')} ${t.tech} ${c.dim(`(${t.category})`)}`);
+        lines.push(boxRow(`  ${c.red('\u2022')} ${t.tech} ${c.dim(`(${t.category})`)}`, W));
       }
     } else {
-      lines.push(`  ${c.dim('  No technologies detected')}`);
+      lines.push(boxRow(`  ${c.dim('No technologies detected')}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   // ── Conversion signals ──────────────────────────────────
   if (result.competitor.conversionSignals.length > 0 || result.you.conversionSignals.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(56)));
-    lines.push(`  ${c.bold('Conversion Signals')}`);
-    lines.push('');
-    if (result.you.conversionSignals.length > 0) {
-      lines.push(`  ${c.green('You:')}  ${result.you.conversionSignals.join(' \u2022 ')}`);
-    } else {
-      lines.push(`  ${c.green('You:')}  ${c.dim('None detected')}`);
-    }
-    if (result.competitor.conversionSignals.length > 0) {
-      lines.push(`  ${c.red('Them:')} ${result.competitor.conversionSignals.join(' \u2022 ')}`);
-    } else {
-      lines.push(`  ${c.red('Them:')} ${c.dim('None detected')}`);
-    }
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Conversion Signals')}`, W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.green('You:')}  ${result.you.conversionSignals.length > 0 ? result.you.conversionSignals.join(' \u2022 ') : c.dim('None detected')}`, W));
+    lines.push(boxRow(`  ${c.red('Them:')} ${result.competitor.conversionSignals.length > 0 ? result.competitor.conversionSignals.join(' \u2022 ') : c.dim('None detected')}`, W));
+    lines.push(boxRow('', W));
   }
 
-  // ── Action items ────────────────────────────────────────
+  // ── Gaps to close ───────────────────────────────────────
   if (result.summary.theirAdvantages.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(56)));
-    lines.push(`  ${c.bold(c.yellow('Gaps to Close'))}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold(c.yellow('Gaps to Close'))}`, W));
+    lines.push(boxRow('', W));
     for (const gap of result.summary.theirAdvantages) {
-      lines.push(`  ${c.yellow('\u2192')} ${gap}`);
+      lines.push(boxRow(`  ${c.yellow('\u2192')} ${gap}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
+  // ── Your advantages ─────────────────────────────────────
   if (result.summary.yourAdvantages.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(56)));
-    lines.push(`  ${c.bold(c.green('Your Advantages'))}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold(c.green('Your Advantages'))}`, W));
+    lines.push(boxRow('', W));
     for (const adv of result.summary.yourAdvantages) {
-      lines.push(`  ${c.green('\u2714')} ${adv}`);
+      lines.push(boxRow(`  ${c.green('\u2714')} ${adv}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
+  lines.push(boxBot(W));
   lines.push('');
   return lines.join('\n');
 }
@@ -512,16 +675,17 @@ export function formatCitabilityReport(result) {
   groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
 
   const grade = gradeFor(score);
-  const lines = [];
+  const lines = premiumHeader('AI Citability Score', 'How likely AI models are to cite your content');
 
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('AI Citability Score')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${grade.color(` ${score} `)}  ${scoreBar(score)}  ${scoreLabel(score)}`);
-  lines.push('');
-  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}`);
+  // ── Score ───────────────────────────────────────────────
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${grade.color(` ${grade.letter} `)}  ${c.bold(String(score))} / 100   ${scoreBar(score)}   ${scoreLabel(score)}`, W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.dim('Pages scanned:')} ${c.bold(String(filesScanned))}    ${c.dim('Findings:')} ${findings.length}`, W));
+  lines.push(boxRow('', W));
 
+  // ── 7-Dimension Breakdown ──────────────────────────────
   if (result.avgBreakdown) {
     const bd = result.avgBreakdown;
     const dims = [
@@ -534,94 +698,51 @@ export function formatCitabilityReport(result) {
       ['Content Structure', bd.contentStructure],
     ];
 
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('7-Dimension Breakdown')}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('7-Dimension Breakdown')}`, W));
+    lines.push(boxRow('', W));
 
     for (const [name, val] of dims) {
       if (val == null) continue;
       const rounded = Math.round(val);
-      lines.push(`  ${pad(name, 24)} ${scoreBar(rounded)}  ${rounded}/100`);
+      lines.push(boxRow(`  ${pad(name, 24)} ${scoreBar(rounded, 16)}  ${rounded}/100`, W));
     }
+    lines.push(boxRow('', W));
   }
 
+  // ── Per-Page Scores ─────────────────────────────────────
   if (result.pages && result.pages.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Per-Page Scores')}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Per-Page Scores')}`, W));
+    lines.push(boxRow('', W));
     for (const p of result.pages.slice(0, 10)) {
       const file = p.file || p.url || 'unknown';
       const pScore = p.citability ?? p.score ?? 0;
-      lines.push(`  ${scoreBar(pScore)}  ${pad(String(pScore), 4)} ${c.dim(file)}`);
+      lines.push(boxRow(`  ${scoreBar(pScore, 12)}  ${pad(String(pScore), 4)} ${c.dim(file)}`, W));
     }
     if (result.pages.length > 10) {
-      lines.push(`  ${c.dim(`  ... +${result.pages.length - 10} more pages`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.pages.length - 10} more pages`)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
+  // ── Findings ────────────────────────────────────────────
   const critical = groups.filter(g => g.severity === 'critical' || g.severity === 'high');
   const medium = groups.filter(g => g.severity === 'medium');
   const low = groups.filter(g => g.severity === 'low');
 
-  if (critical.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
-    lines.push('');
-    for (const g of critical) {
-      const badge = severityBadge(g.severity);
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`              ${g.message}`);
-      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
+  premiumFindings(lines, critical, '\u2718 Must Fix', c.red);
+  premiumFindings(lines, medium, '\u25CB Should Fix', c.yellow);
+  premiumFindings(lines, low, '\u2022 Nice to Have', s => c.dim(s));
 
-  if (medium.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
-    lines.push('');
-    for (const g of medium) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`     ${g.message}`);
-      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
-
-  if (low.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
-    lines.push('');
-    for (const g of low) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
-      lines.push(`     ${c.dim(g.message)}`);
-      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
-      lines.push('');
-    }
-  }
-
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
-  if (critical.length > 0) {
-    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} issues first`);
-  }
-  if (medium.length > 0) {
-    const step = critical.length > 0 ? '2.' : '1.';
-    lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues to improve citability`);
-  }
-  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank content .')} to analyze content quality`);
+  // ── Next steps ──────────────────────────────────────────
+  const steps = [];
+  if (critical.length > 0) steps.push(`Fix ${c.bold(`${critical.length} critical/high`)} issues first`);
+  if (medium.length > 0) steps.push(`Address ${c.bold(`${medium.length} medium`)} issues to improve citability`);
+  steps.push(`Run ${c.bold('claude-rank content .')} to analyze content quality`);
+  premiumNextSteps(lines, steps);
   lines.push('');
 
   return lines.join('\n');
@@ -641,133 +762,86 @@ export function formatContentReport(result) {
   const groups = groupFindings(findings);
   groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
 
-  const lines = [];
+  const lines = premiumHeader('Content Analysis', 'Readability, duplicates, and internal linking');
 
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Content Analysis')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}`);
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.dim('Pages scanned:')} ${c.bold(String(filesScanned))}    ${c.dim('Findings:')} ${findings.length}`, W));
 
   if (result.avgReadability != null) {
-    lines.push('');
-    lines.push(`  ${c.bold('Average Readability')}`);
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Average Readability')}`, W));
     if (result.avgReadability.fleschKincaid != null) {
-      lines.push(`  ${c.dim('Flesch-Kincaid Grade:')} ${result.avgReadability.fleschKincaid}`);
+      lines.push(boxRow(`  ${c.dim('Flesch-Kincaid Grade:')} ${result.avgReadability.fleschKincaid}`, W));
     }
     if (result.avgReadability.gunningFog != null) {
-      lines.push(`  ${c.dim('Gunning Fog Index:')}   ${result.avgReadability.gunningFog}`);
+      lines.push(boxRow(`  ${c.dim('Gunning Fog Index:')}   ${result.avgReadability.gunningFog}`, W));
     }
   }
+  lines.push(boxRow('', W));
 
   if (result.pages && result.pages.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Per-Page Readability')}`);
-    lines.push('');
-    lines.push(`  ${pad(c.bold('File'), 36)} ${pad(c.bold('FK'), 6)} ${c.bold('Fog')}`);
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Per-Page Readability')}`, W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${pad(c.bold('File'), 32)} ${pad(c.bold('FK'), 6)} ${c.bold('Fog')}`, W));
+    lines.push(boxRow(`  ${c.dim(BOX.h.repeat(46))}`, W));
     for (const p of result.pages.slice(0, 10)) {
       const file = p.file || p.url || 'unknown';
       const fk = p.readability?.fleschKincaid != null ? String(p.readability.fleschKincaid) : '-';
       const fog = p.readability?.gunningFog != null ? String(p.readability.gunningFog) : '-';
-      lines.push(`  ${pad(c.dim(file), 36)} ${pad(fk, 6)} ${fog}`);
+      lines.push(boxRow(`  ${pad(c.dim(file), 32)} ${pad(fk, 6)} ${fog}`, W));
     }
     if (result.pages.length > 10) {
-      lines.push(`  ${c.dim(`  ... +${result.pages.length - 10} more pages`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.pages.length - 10} more pages`)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   if (result.duplicates && result.duplicates.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.yellow('Duplicate Content'))} ${c.dim(`(${result.duplicates.length} pairs)`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold(c.yellow('Duplicate Content'))} ${c.dim(`(${result.duplicates.length} pairs)`)}`, W));
+    lines.push(boxRow('', W));
     for (const dup of result.duplicates.slice(0, 5)) {
       const similarity = dup.similarity != null ? ` ${c.yellow(`${Math.round(dup.similarity * 100)}%`)}` : '';
-      lines.push(`  ${c.yellow('\u25CB')} ${c.dim(dup.fileA || dup.a)} ${c.dim('\u2194')} ${c.dim(dup.fileB || dup.b)}${similarity}`);
+      lines.push(boxRow(`  ${c.yellow('\u25CB')} ${c.dim(dup.fileA || dup.a)} ${c.dim('\u2194')} ${c.dim(dup.fileB || dup.b)}${similarity}`, W));
     }
     if (result.duplicates.length > 5) {
-      lines.push(`  ${c.dim(`  ... +${result.duplicates.length - 5} more pairs`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.duplicates.length - 5} more pairs`)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   if (result.linkSuggestions && result.linkSuggestions.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Internal Linking Suggestions')} ${c.dim(`(${result.linkSuggestions.length})`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Internal Linking Suggestions')} ${c.dim(`(${result.linkSuggestions.length})`)}`, W));
+    lines.push(boxRow('', W));
     for (const sug of result.linkSuggestions.slice(0, 5)) {
-      lines.push(`  ${c.cyan('\u2192')} ${c.bold(sug.topic)} ${c.dim(`(${sug.pages.join(', ')})`)}`);
+      lines.push(boxRow(`  ${c.cyan('\u2192')} ${c.bold(sug.topic)} ${c.dim(`(${sug.pages.join(', ')})`)}`, W));
     }
     if (result.linkSuggestions.length > 5) {
-      lines.push(`  ${c.dim(`  ... +${result.linkSuggestions.length - 5} more suggestions`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.linkSuggestions.length - 5} more suggestions`)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   const critical = groups.filter(g => g.severity === 'critical' || g.severity === 'high');
   const medium = groups.filter(g => g.severity === 'medium');
   const low = groups.filter(g => g.severity === 'low');
 
-  if (critical.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
-    lines.push('');
-    for (const g of critical) {
-      const badge = severityBadge(g.severity);
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`              ${g.message}`);
-      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
+  premiumFindings(lines, critical, '\u2718 Must Fix', c.red);
+  premiumFindings(lines, medium, '\u25CB Should Fix', c.yellow);
+  premiumFindings(lines, low, '\u2022 Nice to Have', s => c.dim(s));
 
-  if (medium.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
-    lines.push('');
-    for (const g of medium) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`     ${g.message}`);
-      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
-
-  if (low.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
-    lines.push('');
-    for (const g of low) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
-      lines.push(`     ${c.dim(g.message)}`);
-      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
-      lines.push('');
-    }
-  }
-
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
-  if (critical.length > 0) {
-    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} content issues first`);
-  }
-  if (result.duplicates && result.duplicates.length > 0) {
-    lines.push(`  ${c.yellow('\u2192')} Deduplicate or canonicalize ${c.bold(`${result.duplicates.length}`)} similar page pairs`);
-  }
-  if (result.linkSuggestions && result.linkSuggestions.length > 0) {
-    lines.push(`  ${c.cyan('\u2192')} Add ${c.bold(`${result.linkSuggestions.length}`)} internal links to improve crawlability`);
-  }
-  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank citability .')} to check AI citation readiness`);
+  const steps = [];
+  if (critical.length > 0) steps.push(`Fix ${c.bold(`${critical.length} critical/high`)} content issues first`);
+  if (result.duplicates && result.duplicates.length > 0) steps.push(`Deduplicate or canonicalize ${c.bold(`${result.duplicates.length}`)} similar page pairs`);
+  if (result.linkSuggestions && result.linkSuggestions.length > 0) steps.push(`Add ${c.bold(`${result.linkSuggestions.length}`)} internal links to improve crawlability`);
+  steps.push(`Run ${c.bold('claude-rank citability .')} to check AI citation readiness`);
+  premiumNextSteps(lines, steps);
   lines.push('');
 
   return lines.join('\n');
@@ -788,16 +862,8 @@ export function formatPerfReport(result) {
   const groups = groupFindings(findings);
   groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
 
-  const grade = gradeFor(score);
-  const lines = [];
-
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Performance Audit')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${grade.color(` ${score} `)}  ${scoreBar(score)}  ${scoreLabel(score)}`);
-  lines.push('');
-  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}    ${summary.critical > 0 ? c.red(`Critical: ${summary.critical}`) : c.dim(`Critical: ${summary.critical}`)}  ${summary.high > 0 ? c.red(`High: ${summary.high}`) : c.dim(`High: ${summary.high}`)}  ${summary.medium > 0 ? c.yellow(`Medium: ${summary.medium}`) : c.dim(`Medium: ${summary.medium}`)}  ${c.dim(`Low: ${summary.low}`)}`);
+  const lines = premiumHeader('Performance + Mobile', 'Page speed, CLS risks, and mobile-first indexing');
+  premiumScore(lines, score, filesScanned, summary);
 
   if (result.metrics) {
     const m = result.metrics;
@@ -813,14 +879,15 @@ export function formatPerfReport(result) {
     ].filter(([, v]) => v != null);
 
     if (metricRows.length > 0) {
-      lines.push('');
-      lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-      lines.push(`  ${c.bold('Metrics')}`);
-      lines.push('');
+      lines.push(boxDiv(W));
+      lines.push(boxRow('', W));
+      lines.push(boxRow(`  ${c.bold('Metrics')}`, W));
+      lines.push(boxRow('', W));
       for (const [label, value] of metricRows) {
         const valStr = typeof value === 'number' ? String(Math.round(value * 100) / 100) : String(value);
-        lines.push(`  ${pad(c.dim(label), 28)} ${valStr}`);
+        lines.push(boxRow(`  ${pad(c.dim(label), 28)} ${valStr}`, W));
       }
+      lines.push(boxRow('', W));
     }
   }
 
@@ -828,63 +895,15 @@ export function formatPerfReport(result) {
   const medium = groups.filter(g => g.severity === 'medium');
   const low = groups.filter(g => g.severity === 'low');
 
-  if (critical.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
-    lines.push('');
-    for (const g of critical) {
-      const badge = severityBadge(g.severity);
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`              ${g.message}`);
-      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
+  premiumFindings(lines, critical, '\u2718 Must Fix', c.red);
+  premiumFindings(lines, medium, '\u25CB Should Fix', c.yellow);
+  premiumFindings(lines, low, '\u2022 Nice to Have', s => c.dim(s));
 
-  if (medium.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
-    lines.push('');
-    for (const g of medium) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`     ${g.message}`);
-      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
-
-  if (low.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
-    lines.push('');
-    for (const g of low) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
-      lines.push(`     ${c.dim(g.message)}`);
-      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
-      lines.push('');
-    }
-  }
-
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
-  if (critical.length > 0) {
-    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} performance issues first`);
-  }
-  if (medium.length > 0) {
-    const step = critical.length > 0 ? '2.' : '1.';
-    lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues for faster loading`);
-  }
-  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank cwv <url>')} for real-world Core Web Vitals`);
+  const steps = [];
+  if (critical.length > 0) steps.push(`Fix ${c.bold(`${critical.length} critical/high`)} performance issues first`);
+  if (medium.length > 0) steps.push(`Address ${c.bold(`${medium.length} medium`)} issues for faster loading`);
+  steps.push(`Run ${c.bold('claude-rank cwv <url>')} for real-world Core Web Vitals`);
+  premiumNextSteps(lines, steps);
   lines.push('');
 
   return lines.join('\n');
@@ -901,125 +920,56 @@ export function formatVerticalReport(result) {
 
   const filesScanned = result.files_scanned ?? 1;
   const detectedTypes = result.detected_types || [];
-  const lines = [];
+  const lines = premiumHeader('Vertical SEO', 'Industry-specific schema and optimization');
 
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Vertical Scanner')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}`);
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.dim('Pages scanned:')} ${c.bold(String(filesScanned))}`, W));
 
   if (detectedTypes.length === 0) {
-    lines.push('');
-    lines.push(`  ${c.dim('No vertical-specific site types detected.')}`);
-    lines.push(`  ${c.dim('This scanner checks for e-commerce and local business patterns.')}`);
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.dim('No vertical-specific site types detected.')}`, W));
+    lines.push(boxRow(`  ${c.dim('Checks for e-commerce and local business patterns.')}`, W));
+    lines.push(boxRow('', W));
+    lines.push(boxBot(W));
     lines.push('');
     return lines.join('\n');
   }
 
-  lines.push(`  ${c.dim('Detected types:')} ${detectedTypes.map(t => c.cyan(t)).join(', ')}`);
+  lines.push(boxRow(`  ${c.dim('Detected:')} ${detectedTypes.map(t => c.cyan(t)).join(', ')}`, W));
+  lines.push(boxRow('', W));
 
-  if (result.ecommerce) {
-    const ecom = result.ecommerce;
-    const ecomScore = ecom.score ?? 0;
-    const ecomGrade = gradeFor(ecomScore);
-    const ecomFindings = ecom.findings || [];
-    const ecomGroups = groupFindings(ecomFindings);
-    ecomGroups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+  // Helper to render a vertical sub-section
+  const renderVertical = (label, data) => {
+    if (!data) return;
+    const vScore = data.score ?? 0;
+    const vGrade = gradeFor(vScore);
+    const vFindings = data.findings || [];
+    const vGroups = groupFindings(vFindings);
+    vGroups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
 
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('E-Commerce')}`);
-    lines.push('');
-    lines.push(`  ${ecomGrade.color(` ${ecomScore} `)}  ${scoreBar(ecomScore)}  ${scoreLabel(ecomScore)}`);
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold(label)}`, W));
+    lines.push(boxRow(`  ${vGrade.color(` ${vGrade.letter} `)}  ${c.bold(String(vScore))} / 100   ${scoreBar(vScore)}   ${scoreLabel(vScore)}`, W));
+    lines.push(boxRow('', W));
 
-    const eCritical = ecomGroups.filter(g => g.severity === 'critical' || g.severity === 'high');
-    const eMedium = ecomGroups.filter(g => g.severity === 'medium');
-    const eLow = ecomGroups.filter(g => g.severity === 'low');
+    const vCritical = vGroups.filter(g => g.severity === 'critical' || g.severity === 'high');
+    const vMedium = vGroups.filter(g => g.severity === 'medium');
+    const vLow = vGroups.filter(g => g.severity === 'low');
 
-    if (eCritical.length > 0) {
-      lines.push('');
-      lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${eCritical.length} issues)`)}`);
-      lines.push('');
-      for (const g of eCritical) {
-        lines.push(`  ${severityBadge(g.severity)}  ${c.bold(g.rule)}`);
-        lines.push(`              ${g.message}`);
-        lines.push('');
-      }
-    }
-    if (eMedium.length > 0) {
-      lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${eMedium.length} issues)`)}`);
-      lines.push('');
-      for (const g of eMedium) {
-        lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}`);
-        lines.push(`     ${g.message}`);
-        lines.push('');
-      }
-    }
-    if (eLow.length > 0) {
-      lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${eLow.length} issues)`)}`);
-      lines.push('');
-      for (const g of eLow) {
-        lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}`);
-        lines.push(`     ${c.dim(g.message)}`);
-        lines.push('');
-      }
-    }
-  }
+    premiumFindings(lines, vCritical, '\u2718 Must Fix', c.red);
+    premiumFindings(lines, vMedium, '\u25CB Should Fix', c.yellow);
+    premiumFindings(lines, vLow, '\u2022 Nice to Have', s => c.dim(s));
+  };
 
-  if (result.local) {
-    const loc = result.local;
-    const locScore = loc.score ?? 0;
-    const locGrade = gradeFor(locScore);
-    const locFindings = loc.findings || [];
-    const locGroups = groupFindings(locFindings);
-    locGroups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
+  renderVertical('E-Commerce', result.ecommerce);
+  renderVertical('Local Business', result.local);
 
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Local Business')}`);
-    lines.push('');
-    lines.push(`  ${locGrade.color(` ${locScore} `)}  ${scoreBar(locScore)}  ${scoreLabel(locScore)}`);
-
-    const lCritical = locGroups.filter(g => g.severity === 'critical' || g.severity === 'high');
-    const lMedium = locGroups.filter(g => g.severity === 'medium');
-    const lLow = locGroups.filter(g => g.severity === 'low');
-
-    if (lCritical.length > 0) {
-      lines.push('');
-      lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${lCritical.length} issues)`)}`);
-      lines.push('');
-      for (const g of lCritical) {
-        lines.push(`  ${severityBadge(g.severity)}  ${c.bold(g.rule)}`);
-        lines.push(`              ${g.message}`);
-        lines.push('');
-      }
-    }
-    if (lMedium.length > 0) {
-      lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${lMedium.length} issues)`)}`);
-      lines.push('');
-      for (const g of lMedium) {
-        lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}`);
-        lines.push(`     ${g.message}`);
-        lines.push('');
-      }
-    }
-    if (lLow.length > 0) {
-      lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${lLow.length} issues)`)}`);
-      lines.push('');
-      for (const g of lLow) {
-        lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}`);
-        lines.push(`     ${c.dim(g.message)}`);
-        lines.push('');
-      }
-    }
-  }
-
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
-  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank schema .')} to validate structured data for your vertical`);
-  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank scan .')} for a full SEO audit`);
+  premiumNextSteps(lines, [
+    `Run ${c.bold('claude-rank schema .')} to validate structured data for your vertical`,
+    `Run ${c.bold('claude-rank scan .')} for a full SEO audit`,
+  ]);
   lines.push('');
 
   return lines.join('\n');
@@ -1040,20 +990,15 @@ export function formatSecurityReport(result) {
   const groups = groupFindings(findings);
   groups.sort((a, b) => (SEVERITY_ORDER[a.severity] ?? 9) - (SEVERITY_ORDER[b.severity] ?? 9));
 
-  const grade = gradeFor(score);
-  const lines = [];
-
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Security Audit')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${grade.color(` ${score} `)}  ${scoreBar(score)}  ${scoreLabel(score)}`);
-  lines.push('');
-  lines.push(`  ${c.dim('Files scanned:')} ${filesScanned}    ${c.dim('Findings:')} ${findings.length}    ${summary.critical > 0 ? c.red(`Critical: ${summary.critical}`) : c.dim(`Critical: ${summary.critical}`)}  ${summary.high > 0 ? c.red(`High: ${summary.high}`) : c.dim(`High: ${summary.high}`)}  ${summary.medium > 0 ? c.yellow(`Medium: ${summary.medium}`) : c.dim(`Medium: ${summary.medium}`)}  ${c.dim(`Low: ${summary.low}`)}`);
+  const lines = premiumHeader('Security Audit', 'HTTPS, CSP, SRI, and browser security headers');
+  premiumScore(lines, score, filesScanned, summary);
 
   if (groups.length === 0) {
-    lines.push('');
-    lines.push(`  ${c.green('\u2714')} ${c.bold(c.green('All checks passed!'))} No security issues found.`);
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.green('\u2714')} ${c.bold(c.green('All checks passed!'))} No security issues found.`, W));
+    lines.push(boxRow('', W));
+    lines.push(boxBot(W));
     lines.push('');
     return lines.join('\n');
   }
@@ -1062,63 +1007,15 @@ export function formatSecurityReport(result) {
   const medium = groups.filter(g => g.severity === 'medium');
   const low = groups.filter(g => g.severity === 'low');
 
-  if (critical.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.red('\u2718 Must Fix'))} ${c.dim(`(${critical.length} issues)`)}`);
-    lines.push('');
-    for (const g of critical) {
-      const badge = severityBadge(g.severity);
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${badge}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`              ${g.message}`);
-      if (hint) lines.push(`              ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 0) lines.push(`              ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
+  premiumFindings(lines, critical, '\u2718 Must Fix', c.red);
+  premiumFindings(lines, medium, '\u25CB Should Fix', c.yellow);
+  premiumFindings(lines, low, '\u2022 Nice to Have', s => c.dim(s));
 
-  if (medium.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.yellow('\u25CB Should Fix'))} ${c.dim(`(${medium.length} issues)`)}`);
-    lines.push('');
-    for (const g of medium) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.bold(g.rule)}${pageCount}`);
-      lines.push(`     ${g.message}`);
-      if (hint) lines.push(`     ${c.cyan('\u2192')} ${c.cyan(hint)}`);
-      if (g.files.length > 1) lines.push(`     ${c.dim(formatFileList(g.files))}`);
-      lines.push('');
-    }
-  }
-
-  if (low.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.dim('\u2022 Nice to Have')} ${c.dim(`(${low.length} issues)`)}`);
-    lines.push('');
-    for (const g of low) {
-      const hint = FIX_HINTS[g.rule];
-      const pageCount = g.files.length > 1 ? c.dim(` (${g.files.length} pages)`) : '';
-      lines.push(`  ${severityIcon(g.severity)}  ${c.dim(g.rule)}${pageCount}`);
-      lines.push(`     ${c.dim(g.message)}`);
-      if (hint) lines.push(`     ${c.dim('\u2192 ' + hint)}`);
-      lines.push('');
-    }
-  }
-
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
-  if (critical.length > 0) {
-    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${critical.length} critical/high`)} security issues immediately`);
-  }
-  if (medium.length > 0) {
-    const step = critical.length > 0 ? '2.' : '1.';
-    lines.push(`  ${c.yellow(step)} Address ${c.bold(`${medium.length} medium`)} issues to harden your site`);
-  }
-  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank scan .')} to check overall SEO health`);
+  const steps = [];
+  if (critical.length > 0) steps.push(`Fix ${c.bold(`${critical.length} critical/high`)} security issues immediately`);
+  if (medium.length > 0) steps.push(`Address ${c.bold(`${medium.length} medium`)} issues to harden your site`);
+  steps.push(`Run ${c.bold('claude-rank scan .')} to check overall SEO health`);
+  premiumNextSteps(lines, steps);
   lines.push('');
 
   return lines.join('\n');
@@ -1137,98 +1034,96 @@ export function formatKeywordReport(result) {
     return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
   }
 
-  const lines = [];
+  const lines = premiumHeader('Keyword Clustering', 'Topic clusters, cannibalization, and content gaps');
 
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Keyword Clustering')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${c.dim('Pages analyzed:')} ${result.summary.totalPages}    ${c.dim('Clusters:')} ${result.summary.totalClusters}    ${c.dim('Gaps:')} ${result.summary.contentGaps}`);
-  lines.push('');
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.dim('Pages analyzed:')} ${c.bold(String(result.summary.totalPages))}    ${c.dim('Clusters:')} ${c.bold(String(result.summary.totalClusters))}    ${c.dim('Gaps:')} ${c.bold(String(result.summary.contentGaps))}`, W));
+  lines.push(boxRow('', W));
 
   // Primary keywords per page
   if (result.primaryKeywords && result.primaryKeywords.length > 0) {
-    lines.push(`  ${c.bold('Primary Keywords')}`);
-    lines.push('');
-    lines.push(`  ${pad(c.bold('File'), 36)} ${pad(c.bold('Primary Keyword'), 22)} ${c.bold('Score')}`);
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Primary Keywords')}`, W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${pad(c.bold('File'), 30)} ${pad(c.bold('Primary Keyword'), 20)} ${c.bold('Score')}`, W));
+    lines.push(boxRow(`  ${c.dim(BOX.h.repeat(52))}`, W));
     for (const pk of result.primaryKeywords.slice(0, 15)) {
       const file = pk.file || 'unknown';
       const kw = pk.primaryKeyword || '-';
       const score = pk.score != null ? String(pk.score) : '-';
-      lines.push(`  ${pad(c.dim(file), 36)} ${pad(kw, 22)} ${score}`);
+      lines.push(boxRow(`  ${pad(c.dim(file), 30)} ${pad(kw, 20)} ${score}`, W));
     }
     if (result.primaryKeywords.length > 15) {
-      lines.push(`  ${c.dim(`  ... +${result.primaryKeywords.length - 15} more pages`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.primaryKeywords.length - 15} more pages`)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   // Topic clusters
   if (result.clusters && result.clusters.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.cyan('Topic Clusters'))} ${c.dim(`(${result.clusters.length})`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold(c.cyan('Topic Clusters'))} ${c.dim(`(${result.clusters.length})`)}`, W));
+    lines.push(boxRow('', W));
     for (const cluster of result.clusters.slice(0, 10)) {
-      lines.push(`  ${c.cyan('\u25CF')} ${c.bold(cluster.theme)}`);
-      lines.push(`    ${c.dim('Keywords:')} ${cluster.keywords.slice(0, 6).join(', ')}`);
-      lines.push(`    ${c.dim('Pages:')} ${cluster.pages.join(', ')}`);
+      lines.push(boxRow(`  ${c.cyan('\u25CF')} ${c.bold(cluster.theme)}`, W));
+      lines.push(boxRow(`    ${c.dim('Keywords:')} ${cluster.keywords.slice(0, 6).join(', ')}`, W));
+      lines.push(boxRow(`    ${c.dim('Pages:')} ${cluster.pages.join(', ')}`, W));
       if (cluster.suggestedPillar) {
-        lines.push(`    ${c.cyan('\u2192')} ${c.cyan(cluster.suggestedPillar)}`);
+        lines.push(boxRow(`    ${c.cyan('\u2192')} ${c.cyan(cluster.suggestedPillar)}`, W));
       }
-      lines.push('');
+      lines.push(boxRow('', W));
     }
     if (result.clusters.length > 10) {
-      lines.push(`  ${c.dim(`  ... +${result.clusters.length - 10} more clusters`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.clusters.length - 10} more clusters`)}`, W));
+      lines.push(boxRow('', W));
     }
   }
 
   // Keyword cannibalization
   if (result.cannibalization && result.cannibalization.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.red('\u2718 Keyword Cannibalization'))} ${c.dim(`(${result.cannibalization.length} issues)`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold(c.red('\u2718 Keyword Cannibalization'))} ${c.dim(`(${result.cannibalization.length})`)}`, W));
+    lines.push(boxRow('', W));
     for (const issue of result.cannibalization.slice(0, 10)) {
-      lines.push(`  ${c.red('\u25CB')} ${c.bold(issue.keyword)}`);
-      lines.push(`    ${c.dim('Competing pages:')} ${issue.pages.join(', ')}`);
-      lines.push(`    ${c.yellow('\u2192')} ${c.yellow(issue.recommendation)}`);
-      lines.push('');
+      lines.push(boxRow(`  ${c.red('\u25CB')} ${c.bold(issue.keyword)}`, W));
+      lines.push(boxRow(`    ${c.dim('Competing pages:')} ${issue.pages.join(', ')}`, W));
+      lines.push(boxRow(`    ${c.yellow('\u2192')} ${c.yellow(issue.recommendation)}`, W));
+      lines.push(boxRow('', W));
     }
     if (result.cannibalization.length > 10) {
-      lines.push(`  ${c.dim(`  ... +${result.cannibalization.length - 10} more`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.cannibalization.length - 10} more`)}`, W));
+      lines.push(boxRow('', W));
     }
   }
 
   // Content gaps
   if (result.contentGaps && result.contentGaps.length > 0) {
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold(c.yellow('Content Gaps'))} ${c.dim(`(${result.contentGaps.length} topics need more content)`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold(c.yellow('Content Gaps'))} ${c.dim(`(${result.contentGaps.length} topics need content)`)}`, W));
+    lines.push(boxRow('', W));
     for (const gap of result.contentGaps.slice(0, 10)) {
-      lines.push(`  ${c.yellow('\u25CB')} ${c.bold(gap.keyword)} ${c.dim(`(score: ${gap.score})`)}`);
-      lines.push(`    ${c.dim('Only on:')} ${gap.currentPage}`);
-      lines.push(`    ${c.cyan('\u2192')} ${c.cyan(gap.recommendation)}`);
-      lines.push('');
+      lines.push(boxRow(`  ${c.yellow('\u25CB')} ${c.bold(gap.keyword)} ${c.dim(`(score: ${gap.score})`)}`, W));
+      lines.push(boxRow(`    ${c.dim('Only on:')} ${gap.currentPage}`, W));
+      lines.push(boxRow(`    ${c.cyan('\u2192')} ${c.cyan(gap.recommendation)}`, W));
+      lines.push(boxRow('', W));
     }
     if (result.contentGaps.length > 10) {
-      lines.push(`  ${c.dim(`  ... +${result.contentGaps.length - 10} more gaps`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.contentGaps.length - 10} more gaps`)}`, W));
+      lines.push(boxRow('', W));
     }
   }
 
-  // Next steps
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
-  if (result.cannibalization && result.cannibalization.length > 0) {
-    lines.push(`  ${c.red('1.')} Fix ${c.bold(`${result.cannibalization.length} cannibalization`)} issues — consolidate or differentiate competing pages`);
-  }
-  if (result.contentGaps && result.contentGaps.length > 0) {
-    lines.push(`  ${c.yellow('\u2192')} Fill ${c.bold(`${result.contentGaps.length}`)} content gaps with supporting articles`);
-  }
-  if (result.clusters && result.clusters.length > 0) {
-    lines.push(`  ${c.cyan('\u2192')} Build pillar pages for ${c.bold(`${result.clusters.length}`)} topic clusters`);
-  }
-  lines.push(`  ${c.cyan('\u2192')} Run ${c.bold('claude-rank content .')} for readability and duplicate analysis`);
+  const steps = [];
+  if (result.cannibalization && result.cannibalization.length > 0) steps.push(`Fix ${c.bold(`${result.cannibalization.length} cannibalization`)} issues — consolidate or differentiate pages`);
+  if (result.contentGaps && result.contentGaps.length > 0) steps.push(`Fill ${c.bold(`${result.contentGaps.length}`)} content gaps with supporting articles`);
+  if (result.clusters && result.clusters.length > 0) steps.push(`Build pillar pages for ${c.bold(`${result.clusters.length}`)} topic clusters`);
+  steps.push(`Run ${c.bold('claude-rank content .')} for readability and duplicate analysis`);
+  premiumNextSteps(lines, steps);
   lines.push('');
 
   return lines.join('\n');
@@ -1243,110 +1138,116 @@ export function formatBriefReport(result) {
     return `\n  ${c.yellow('\u26A0')} ${c.bold('Skipped:')} ${result.reason}\n`;
   }
 
-  const lines = [];
+  const lines = premiumHeader('Content Brief', `Keyword: ${result.targetKeyword}`);
 
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Content Brief')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${c.bold('Target Keyword:')} ${c.cyan(result.targetKeyword)}`);
-  lines.push(`  ${c.dim('Pages scanned:')} ${result.analysis.totalPagesScanned}    ${c.dim('Related pages:')} ${result.analysis.relatedPagesFound}`);
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold('Target Keyword:')} ${c.cyan(result.targetKeyword)}`, W));
+  lines.push(boxRow(`  ${c.dim('Pages scanned:')} ${result.analysis.totalPagesScanned}    ${c.dim('Related pages:')} ${result.analysis.relatedPagesFound}`, W));
+  lines.push(boxRow('', W));
 
   // Suggested title
-  lines.push('');
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Suggested Title (H1)')}`);
-  lines.push('');
-  lines.push(`  ${c.green(result.suggestedTitle)}`);
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold('Suggested Title (H1)')}`, W));
+  lines.push(boxRow(`  ${c.green(result.suggestedTitle)}`, W));
+  lines.push(boxRow('', W));
 
   // Word count target
-  lines.push('');
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Word Count Target')}`);
-  lines.push('');
-  lines.push(`  ${c.dim('Target:')} ${c.bold(String(result.targetWordCount))} words ${c.dim(`(avg competitor: ${result.avgCompetitorWordCount})`)}`);
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.bold('Word Count Target')}`, W));
+  lines.push(boxRow(`  ${c.bold(String(result.targetWordCount))} words ${c.dim(`(avg competitor: ${result.avgCompetitorWordCount})`)}`, W));
+  lines.push(boxRow('', W));
 
   // Suggested outline
   if (result.suggestedOutline.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Suggested H2 Outline')} ${c.dim(`(${result.suggestedOutline.length} sections)`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Suggested H2 Outline')} ${c.dim(`(${result.suggestedOutline.length} sections)`)}`, W));
+    lines.push(boxRow('', W));
     for (let i = 0; i < result.suggestedOutline.length; i++) {
-      lines.push(`  ${c.cyan(`${i + 1}.`)} ${result.suggestedOutline[i]}`);
+      lines.push(boxRow(`  ${c.cyan(`${i + 1}.`)} ${result.suggestedOutline[i]}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   // Questions to answer
   if (result.questionsToAnswer.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Questions to Answer')} ${c.dim(`(${result.questionsToAnswer.length})`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Questions to Answer')} ${c.dim(`(${result.questionsToAnswer.length})`)}`, W));
+    lines.push(boxRow('', W));
     for (const q of result.questionsToAnswer) {
-      lines.push(`  ${c.yellow('?')} ${q}`);
+      lines.push(boxRow(`  ${c.yellow('?')} ${q}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   // Internal linking opportunities
   if (result.internalLinkingOpportunities.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Internal Linking Opportunities')} ${c.dim(`(${result.internalLinkingOpportunities.length})`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Internal Linking Opportunities')} ${c.dim(`(${result.internalLinkingOpportunities.length})`)}`, W));
+    lines.push(boxRow('', W));
     for (const link of result.internalLinkingOpportunities.slice(0, 8)) {
       const icon = link.direction === 'link-to' ? c.green('\u2192') : c.blue('\u2190');
       const dirLabel = link.direction === 'link-to' ? c.dim('link to') : c.dim('link from');
-      lines.push(`  ${icon} ${dirLabel} ${c.bold(link.title || link.file)}`);
-      lines.push(`     ${c.dim(link.reason)}`);
+      lines.push(boxRow(`  ${icon} ${dirLabel} ${c.bold(link.title || link.file)}`, W));
+      lines.push(boxRow(`     ${c.dim(link.reason)}`, W));
     }
     if (result.internalLinkingOpportunities.length > 8) {
-      lines.push(`  ${c.dim(`  ... +${result.internalLinkingOpportunities.length - 8} more`)}`);
+      lines.push(boxRow(`  ${c.dim(`... +${result.internalLinkingOpportunities.length - 8} more`)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   // Related keywords
   if (result.relatedKeywords.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Related Keywords')} ${c.dim(`(${result.relatedKeywords.length})`)}`);
-    lines.push('');
-    const kwLine = result.relatedKeywords.map(k => `${k.word} ${c.dim(`(${k.frequency})`)}`).join('  ');
-    lines.push(`  ${kwLine}`);
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Related Keywords')} ${c.dim(`(${result.relatedKeywords.length})`)}`, W));
+    lines.push(boxRow('', W));
+    for (const k of result.relatedKeywords.slice(0, 12)) {
+      lines.push(boxRow(`  ${c.cyan('\u2022')} ${k.word} ${c.dim(`(${k.frequency})`)}`, W));
+    }
+    if (result.relatedKeywords.length > 12) {
+      lines.push(boxRow(`  ${c.dim(`... +${result.relatedKeywords.length - 12} more`)}`, W));
+    }
+    lines.push(boxRow('', W));
   }
 
   // Content gaps
   if (result.contentGaps.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('Content Gaps')} ${c.dim(`(${result.contentGaps.length} topics)`)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('Content Gaps')} ${c.dim(`(${result.contentGaps.length} topics)`)}`, W));
+    lines.push(boxRow('', W));
     for (const gap of result.contentGaps.slice(0, 8)) {
-      lines.push(`  ${c.red('\u25CB')} ${gap.topic} ${c.dim(`covered by ${gap.coverageRatio} pages`)}`);
+      lines.push(boxRow(`  ${c.red('\u25CB')} ${gap.topic} ${c.dim(`covered by ${gap.coverageRatio} pages`)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
   // GEO optimization tips
   if (result.geoOptimizationTips.length > 0) {
-    lines.push('');
-    lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-    lines.push(`  ${c.bold('GEO Optimization Tips')}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.bold('GEO Optimization Tips')}`, W));
+    lines.push(boxRow('', W));
     for (const tip of result.geoOptimizationTips) {
       const priorityColor = tip.priority === 'high' ? c.red : c.yellow;
-      lines.push(`  ${priorityColor('\u2022')} ${c.bold(tip.tip)}`);
-      lines.push(`     ${c.dim(tip.reason)}`);
+      lines.push(boxRow(`  ${priorityColor('\u2022')} ${c.bold(tip.tip)}`, W));
+      lines.push(boxRow(`     ${c.dim(tip.reason)}`, W));
     }
+    lines.push(boxRow('', W));
   }
 
-  // Next steps
-  lines.push('');
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push(`  ${c.bold('Next Steps')}`);
-  lines.push('');
-  lines.push(`  ${c.cyan('1.')} Write content following this brief`);
-  lines.push(`  ${c.cyan('2.')} Run ${c.bold('claude-rank scan .')} after publishing to verify SEO`);
-  lines.push(`  ${c.cyan('3.')} Run ${c.bold('claude-rank citability .')} to check AI citation readiness`);
+  premiumNextSteps(lines, [
+    `Write content following this brief`,
+    `Run ${c.bold('claude-rank scan .')} after publishing to verify SEO`,
+    `Run ${c.bold('claude-rank citability .')} to check AI citation readiness`,
+  ]);
   lines.push('');
 
   return lines.join('\n');
@@ -1361,26 +1262,26 @@ export function formatSchemaReport(results) {
     return `\n  ${c.yellow('\u26A0')} No structured data (JSON-LD) detected.\n  ${c.cyan('\u2192')} Run ${c.bold('/claude-rank:rank-schema')} to generate schema.\n`;
   }
 
-  const lines = [];
   const totalSchemas = results.reduce((n, r) => n + r.schemas.length, 0);
+  const lines = premiumHeader('Schema Report', 'Structured data (JSON-LD) validation');
 
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Schema Report')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
-  lines.push(`  ${c.dim('Files with schemas:')} ${results.length}    ${c.dim('Total schemas:')} ${totalSchemas}`);
-  lines.push('');
+  lines.push(boxDiv(W));
+  lines.push(boxRow('', W));
+  lines.push(boxRow(`  ${c.dim('Files with schemas:')} ${c.bold(String(results.length))}    ${c.dim('Total schemas:')} ${c.bold(String(totalSchemas))}`, W));
+  lines.push(boxRow('', W));
 
   for (const r of results) {
-    lines.push(`  ${c.bold(r.file)}`);
+    lines.push(boxRow(`  ${c.bold(r.file)}`, W));
     for (const s of r.schemas) {
       const type = s.type || s['@type'] || 'Unknown';
       const format = s.format || 'JSON-LD';
-      lines.push(`    ${c.green('\u2714')} ${c.cyan(type)} ${c.dim(`(${format})`)}`);
+      lines.push(boxRow(`    ${c.green('\u2714')} ${c.cyan(type)} ${c.dim(`(${format})`)}`, W));
     }
-    lines.push('');
+    lines.push(boxRow('', W));
   }
 
+  lines.push(boxBot(W));
+  lines.push('');
   return lines.join('\n');
 }
 
@@ -1393,21 +1294,19 @@ export function formatGscReport(data) {
     return `\n  ${c.red('\u2718')} ${data.error}\n`;
   }
 
-  const lines = [];
-  lines.push('');
-  lines.push(`  ${c.bold(c.cyan('claude-rank'))} ${c.dim('/')} ${c.bold('Google Search Console Report')}`);
-  lines.push(c.dim('  ' + '\u2500'.repeat(50)));
-  lines.push('');
+  const lines = premiumHeader('Google Search Console', 'Quick wins, low CTR alerts, and engagement insights');
 
   const s = data.insights?.summary;
   if (s) {
-    lines.push(`  ${c.dim('Data type:')}      ${c.bold(data.type === 'queries' ? 'Queries' : data.type === 'pages' ? 'Pages' : 'Unknown')}`);
-    lines.push(`  ${c.dim('Total rows:')}     ${data.rowCount}`);
-    lines.push(`  ${c.dim('Total clicks:')}   ${c.bold(String(s.totalClicks))}`);
-    lines.push(`  ${c.dim('Impressions:')}    ${c.bold(String(s.totalImpressions))}`);
-    lines.push(`  ${c.dim('Avg position:')}   ${c.bold(String(s.avgPosition))}`);
-    lines.push(`  ${c.dim('Avg CTR:')}        ${c.bold(s.avgCtr)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.dim('Data type:')}      ${c.bold(data.type === 'queries' ? 'Queries' : data.type === 'pages' ? 'Pages' : 'Unknown')}`, W));
+    lines.push(boxRow(`  ${c.dim('Total rows:')}     ${data.rowCount}`, W));
+    lines.push(boxRow(`  ${c.dim('Total clicks:')}   ${c.bold(String(s.totalClicks))}`, W));
+    lines.push(boxRow(`  ${c.dim('Impressions:')}    ${c.bold(String(s.totalImpressions))}`, W));
+    lines.push(boxRow(`  ${c.dim('Avg position:')}   ${c.bold(String(s.avgPosition))}`, W));
+    lines.push(boxRow(`  ${c.dim('Avg CTR:')}        ${c.bold(s.avgCtr)}`, W));
+    lines.push(boxRow('', W));
   }
 
   const insights = data.insights?.insights || [];
@@ -1416,9 +1315,11 @@ export function formatGscReport(data) {
       : insight.type === 'low-ctr' ? c.yellow('\u26A0')
       : c.red('\u25CF');
 
-    lines.push(`  ${icon} ${c.bold(insight.title)}`);
-    lines.push(`  ${c.dim(insight.description)}`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${icon} ${c.bold(insight.title)}`, W));
+    lines.push(boxRow(`  ${c.dim(insight.description)}`, W));
+    lines.push(boxRow('', W));
 
     for (const item of insight.items) {
       const parts = [];
@@ -1426,16 +1327,20 @@ export function formatGscReport(data) {
       if (item.position !== undefined) parts.push(`${c.dim('pos:')} ${item.position}`);
       if (item.clicks !== undefined) parts.push(`${c.dim('clicks:')} ${item.clicks}`);
       if (item.ctr !== undefined) parts.push(`${c.dim('ctr:')} ${item.ctr}`);
-      lines.push(`    ${c.cyan('\u2022')} ${item.item}  ${parts.join('  ')}`);
+      lines.push(boxRow(`    ${c.cyan('\u2022')} ${item.item}  ${parts.join('  ')}`, W));
     }
-    lines.push('');
+    lines.push(boxRow('', W));
   }
 
   if (insights.length === 0) {
-    lines.push(`  ${c.green('\u2714')} No actionable insights found — data looks healthy.`);
-    lines.push('');
+    lines.push(boxDiv(W));
+    lines.push(boxRow('', W));
+    lines.push(boxRow(`  ${c.green('\u2714')} No actionable insights found — data looks healthy.`, W));
+    lines.push(boxRow('', W));
   }
 
+  lines.push(boxBot(W));
+  lines.push('');
   return lines.join('\n');
 }
 

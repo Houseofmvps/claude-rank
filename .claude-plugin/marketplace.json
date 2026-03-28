@@ -5,12 +5,12 @@
     "email": "houseofmvps2024@gmail.com"
   },
   "metadata": {
-    "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. 170+ rules, auto-fix, GSC/Bing action plans."
+    "description": "Claude Code plugin that tells you why your site won't get cited by AI — and fixes the discoverability files automatically. 170+ rules across 10 scanners."
   },
   "plugins": [
     {
       "name": "claude-rank",
-      "description": "SEO/GEO/AEO audit + auto-fix + keyword clustering + content briefs + E-E-A-T + Core Web Vitals + schema validation",
+      "description": "Find out why AI won't cite your site — then fix it. SEO/GEO/AEO audit, auto-fix, keyword clustering, content briefs, E-E-A-T, schema validation.",
       "version": "2.0.0",
       "source": "./",
       "author": {
