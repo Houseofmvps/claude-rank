@@ -28,78 +28,13 @@
 
 ## See It In Action
 
-```
-$ claude-rank scan ./my-saas-landing
+<div align="center">
 
-claude-rank / SEO Audit
-──────────────────────────────────────────────────
+<img src="assets/demo.gif" alt="claude-rank demo — SEO, GEO, Citability, Security, Content Brief scanning" width="100%"/>
 
-  55   ━━━━━━━━━━━─────────  Poor
+*Real output scanning [savemrr.co](https://savemrr.co) (27 pages) and [houseofmvps.com](https://houseofmvps.com) live URL.*
 
-  Files scanned: 26    Findings: 276    Critical: 0  High: 236  Medium: 40  Low: 0
-
-──────────────────────────────────────────────────
-  ✘ Must Fix (2 issues)
-
-  HIGH   thin-content
-         Page has only 294 words in main content (minimum recommended: 300)
-         → Expand main content to 300+ words
-
-  HIGH   broken-internal-link (26 pages)
-         Broken internal link "/#how-it-works" — target file not found
-         → Fix or remove the broken link — check the href path
-```
-
-```
-$ claude-rank geo ./my-saas-landing
-
-claude-rank / GEO Audit
-──────────────────────────────────────────────────
-
-  80   ━━━━━━━━━━━━━━━━────  Good
-
-  Files scanned: 26    Findings: 4    Medium: 4
-```
-
-```
-$ claude-rank citability ./my-saas-landing
-
-claude-rank / AI Citability Score
-──────────────────────────────────────────────────
-
-  67   ━━━━━━━━━━━━━───────  Below Average
-
-  7-Dimension Breakdown
-  Statistic Density        ━━──────────────────  12/100
-  Front-Loading            ━━━─────────────────  15/100
-  Source Citations          ────────────────────  0/100
-  Expert Attribution       ━━──────────────────  8/100
-  Definition Clarity       ━───────────────────  4/100
-  Schema Completeness      ━━━─────────────────  14/100
-  Content Structure        ━━━─────────────────  13/100
-```
-
-```
-$ claude-rank compete https://competitor.com ./my-project
-
-claude-rank / Competitive X-Ray
-──────────────────────────────────────────────────
-
-  You:  12 wins    Them:  6 wins    Ties:  2
-
-  Area                      You           Them          Winner
-  ────────────────────────────────────────────────────────────
-  Word count                1,247         386           ✓ You
-  JSON-LD schemas           3             0             ✓ You
-  Conversion signals        5             2             ✓ You
-  Internal links            12            3             ✓ You
-
-  Tech Stack:
-    You:  Next.js, Tailwind CSS, Stripe
-    Them: WordPress, Google Analytics
-```
-
-*Real output from scanning [savemrr.co](https://savemrr.co) (26-page SaaS landing) and [houseofmvps.com](https://houseofmvps.com).*
+</div>
 
 ---
 
