@@ -1,25 +1,56 @@
+#!/usr/bin/env node
 /**
  * lighthouse-scanner.mjs — Core Web Vitals scanner using Lighthouse.
- * Optional dependency: works when `lighthouse` and Chrome are available.
- * Gracefully returns unavailable status when not installed.
+ * Uses `npx -y lighthouse@12` — no separate install needed. Just needs Chrome.
+ * Pinned version prevents supply chain attacks.
  *
  * Usage:
  *   node tools/lighthouse-scanner.mjs <url>
  *   node tools/lighthouse-scanner.mjs <url> --json
  */
 
+import { execFileSync } from 'child_process';
+import { readFileSync, unlinkSync, mkdtempSync } from 'fs';
+import { join } from 'path';
+import { tmpdir } from 'os';
+import { validateUrl } from './lib/security.mjs';
+
+// Pin lighthouse version to prevent supply chain attacks
+const LIGHTHOUSE_VERSION = 'lighthouse@12';
+
 // ---------------------------------------------------------------------------
-// Try to import lighthouse (optional dependency)
+// Chrome detection (same as Ultraship)
 // ---------------------------------------------------------------------------
 
-let lighthouse = null;
-let chromeLauncher = null;
+const CHROME_PATHS = [
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
+  '/usr/bin/google-chrome',
+  '/usr/bin/chromium-browser',
+  '/usr/bin/chromium',
+];
 
-try {
-  lighthouse = (await import('lighthouse')).default;
-  chromeLauncher = await import('chrome-launcher');
-} catch {
-  // lighthouse not installed — will return unavailable status
+function findChrome() {
+  for (const p of CHROME_PATHS) {
+    try {
+      execFileSync('test', ['-f', p]);
+      return p;
+    } catch {
+      // not found at this path
+    }
+  }
+
+  const candidates = ['google-chrome', 'chromium-browser', 'chromium', 'chrome'];
+  for (const name of candidates) {
+    try {
+      const result = execFileSync('which', [name], { encoding: 'utf8', stdio: ['pipe', 'pipe', 'pipe'] });
+      const found = result.trim();
+      if (found) return found;
+    } catch {
+      // not in PATH
+    }
+  }
+
+  return null;
 }
 
 // ---------------------------------------------------------------------------
@@ -27,12 +58,11 @@ try {
 // ---------------------------------------------------------------------------
 
 const CWV_THRESHOLDS = {
-  LCP: { good: 2500, poor: 4000 },    // Largest Contentful Paint (ms)
-  CLS: { good: 0.1, poor: 0.25 },     // Cumulative Layout Shift
-  INP: { good: 200, poor: 500 },       // Interaction to Next Paint (ms)
-  FCP: { good: 1800, poor: 3000 },     // First Contentful Paint (ms)
-  TBT: { good: 200, poor: 600 },       // Total Blocking Time (ms)
-  SI:  { good: 3400, poor: 5800 },     // Speed Index (ms)
+  LCP: { good: 2500, poor: 4000 },
+  CLS: { good: 0.1, poor: 0.25 },
+  FCP: { good: 1800, poor: 3000 },
+  TBT: { good: 200, poor: 600 },
+  SI:  { good: 3400, poor: 5800 },
 };
 
 function rateMetric(value, thresholds) {
@@ -61,33 +91,49 @@ const RULES = {
 };
 
 // ---------------------------------------------------------------------------
-// isAvailable — check if Lighthouse can run
+// isAvailable — check if Chrome is present (Lighthouse downloads via npx)
 // ---------------------------------------------------------------------------
 
 /**
- * Check if Lighthouse is available (installed + Chrome present).
- * @returns {{ available: boolean, reason?: string }}
+ * Check if CWV scanning is available (just needs Chrome — Lighthouse auto-downloads).
+ * @returns {{ available: boolean, reason?: string, chromePath?: string }}
  */
 export function isAvailable() {
-  if (!lighthouse || !chromeLauncher) {
+  const chromePath = findChrome();
+  if (!chromePath) {
     return {
       available: false,
-      reason: 'Lighthouse not installed. Run: npm install -g lighthouse chrome-launcher',
+      reason: 'Chrome or Chromium not found. Install Google Chrome to enable Core Web Vitals scanning.',
     };
   }
-  return { available: true };
+  return { available: true, chromePath };
 }
 
 // ---------------------------------------------------------------------------
-// runLighthouse — run audit and extract CWV metrics
+// runLighthouse — run via npx (no install needed)
 // ---------------------------------------------------------------------------
 
 /**
  * Run Lighthouse audit on a URL and return Core Web Vitals metrics.
+ * Uses `npx -y lighthouse@12` — downloads automatically, no global install.
  * @param {string} url — the URL to audit
- * @returns {Promise<object>} { url, available, metrics, findings, scores, summary }
+ * @returns {object} { url, available, metrics, findings, scores, summary }
  */
-export async function runLighthouse(url) {
+export function runLighthouse(url) {
+  // Validate URL
+  const urlCheck = validateUrl(url);
+  if (!urlCheck.valid) {
+    return {
+      url,
+      available: false,
+      reason: `URL blocked: ${urlCheck.reason}`,
+      metrics: null,
+      findings: [],
+      scores: { performance: null },
+      summary: { critical: 0, high: 0, medium: 0, low: 0 },
+    };
+  }
+
   const check = isAvailable();
   if (!check.available) {
     return {
@@ -101,31 +147,51 @@ export async function runLighthouse(url) {
     };
   }
 
-  // Launch Chrome headless
-  const chrome = await chromeLauncher.launch({
-    chromeFlags: ['--headless', '--no-sandbox', '--disable-gpu'],
-  });
+  const tmpDir = mkdtempSync(join(tmpdir(), 'claude-rank-lh-'));
+  const outputFile = join(tmpDir, 'report.json');
 
   try {
-    const result = await lighthouse(url, {
-      port: chrome.port,
-      output: 'json',
-      onlyCategories: ['performance'],
-      formFactor: 'mobile',
-      screenEmulation: {
-        mobile: true,
-        width: 412,
-        height: 823,
-        deviceScaleFactor: 1.75,
-      },
-    });
+    // Run Lighthouse via npx — auto-downloads if not cached
+    execFileSync(
+      'npx',
+      [
+        '-y',
+        LIGHTHOUSE_VERSION,
+        url,
+        '--output=json',
+        `--output-path=${outputFile}`,
+        '--chrome-flags=--headless --no-sandbox --disable-dev-shm-usage',
+        '--quiet',
+        '--only-categories=performance',
+      ],
+      {
+        env: { ...process.env, CHROME_PATH: check.chromePath },
+        timeout: 60000,
+        stdio: ['pipe', 'pipe', 'pipe'],
+      }
+    );
 
-    const lhr = result.lhr;
-    const audits = lhr.audits;
+    let report;
+    try {
+      report = JSON.parse(readFileSync(outputFile, 'utf8'));
+    } catch {
+      return {
+        url,
+        available: true,
+        reason: 'Failed to parse Lighthouse output',
+        metrics: null,
+        findings: [],
+        scores: { performance: null },
+        summary: { critical: 0, high: 0, medium: 0, low: 0 },
+      };
+    }
+
+    const cats = report.categories || {};
+    const audits = report.audits || {};
 
     // Extract metrics
     const metrics = {
-      performanceScore: Math.round((lhr.categories.performance?.score || 0) * 100),
+      performanceScore: cats.performance ? Math.round(cats.performance.score * 100) : null,
       LCP: audits['largest-contentful-paint']?.numericValue || null,
       CLS: audits['cumulative-layout-shift']?.numericValue || null,
       FCP: audits['first-contentful-paint']?.numericValue || null,
@@ -144,71 +210,69 @@ export async function runLighthouse(url) {
     }
 
     // Performance score
-    if (metrics.performanceScore < 50) {
-      addFinding('perf-score-poor', `Lighthouse performance score is ${metrics.performanceScore}/100 (poor, target: 90+)`);
-    } else if (metrics.performanceScore < 90) {
-      addFinding('perf-score-needs-work', `Lighthouse performance score is ${metrics.performanceScore}/100 (target: 90+)`);
+    if (metrics.performanceScore !== null) {
+      if (metrics.performanceScore < 50) {
+        addFinding('perf-score-poor', `Lighthouse performance score is ${metrics.performanceScore}/100 (poor, target: 90+)`);
+      } else if (metrics.performanceScore < 90) {
+        addFinding('perf-score-needs-work', `Lighthouse performance score is ${metrics.performanceScore}/100 (target: 90+)`);
+      }
     }
 
     // LCP
     if (metrics.LCP !== null) {
       const rating = rateMetric(metrics.LCP, CWV_THRESHOLDS.LCP);
-      const lcpSec = (metrics.LCP / 1000).toFixed(1);
-      if (rating === 'poor') {
-        addFinding('cwv-lcp-poor', `LCP is ${lcpSec}s (poor — should be under ${CWV_THRESHOLDS.LCP.good / 1000}s)`);
-      } else if (rating === 'needs-improvement') {
-        addFinding('cwv-lcp-needs-work', `LCP is ${lcpSec}s (needs improvement — target: under ${CWV_THRESHOLDS.LCP.good / 1000}s)`);
-      }
+      const val = (metrics.LCP / 1000).toFixed(1);
+      if (rating === 'poor') addFinding('cwv-lcp-poor', `LCP is ${val}s (poor — should be under 2.5s)`);
+      else if (rating === 'needs-improvement') addFinding('cwv-lcp-needs-work', `LCP is ${val}s (needs improvement — target: under 2.5s)`);
       metrics.LCP_rating = rating;
     }
 
     // CLS
     if (metrics.CLS !== null) {
       const rating = rateMetric(metrics.CLS, CWV_THRESHOLDS.CLS);
-      if (rating === 'poor') {
-        addFinding('cwv-cls-poor', `CLS is ${metrics.CLS.toFixed(3)} (poor — should be under ${CWV_THRESHOLDS.CLS.good})`);
-      } else if (rating === 'needs-improvement') {
-        addFinding('cwv-cls-needs-work', `CLS is ${metrics.CLS.toFixed(3)} (needs improvement — target: under ${CWV_THRESHOLDS.CLS.good})`);
-      }
+      if (rating === 'poor') addFinding('cwv-cls-poor', `CLS is ${metrics.CLS.toFixed(3)} (poor — should be under 0.1)`);
+      else if (rating === 'needs-improvement') addFinding('cwv-cls-needs-work', `CLS is ${metrics.CLS.toFixed(3)} (needs improvement — target: under 0.1)`);
       metrics.CLS_rating = rating;
     }
 
     // FCP
     if (metrics.FCP !== null) {
       const rating = rateMetric(metrics.FCP, CWV_THRESHOLDS.FCP);
-      const fcpSec = (metrics.FCP / 1000).toFixed(1);
-      if (rating === 'poor') {
-        addFinding('cwv-fcp-poor', `FCP is ${fcpSec}s (poor — should be under ${CWV_THRESHOLDS.FCP.good / 1000}s)`);
-      } else if (rating === 'needs-improvement') {
-        addFinding('cwv-fcp-needs-work', `FCP is ${fcpSec}s (needs improvement — target: under ${CWV_THRESHOLDS.FCP.good / 1000}s)`);
-      }
+      const val = (metrics.FCP / 1000).toFixed(1);
+      if (rating === 'poor') addFinding('cwv-fcp-poor', `FCP is ${val}s (poor — should be under 1.8s)`);
+      else if (rating === 'needs-improvement') addFinding('cwv-fcp-needs-work', `FCP is ${val}s (needs improvement — target: under 1.8s)`);
       metrics.FCP_rating = rating;
     }
 
-    // TBT (proxy for INP in lab data)
+    // TBT
     if (metrics.TBT !== null) {
       const rating = rateMetric(metrics.TBT, CWV_THRESHOLDS.TBT);
-      if (rating === 'poor') {
-        addFinding('cwv-tbt-poor', `TBT is ${Math.round(metrics.TBT)}ms (poor — should be under ${CWV_THRESHOLDS.TBT.good}ms)`);
-      } else if (rating === 'needs-improvement') {
-        addFinding('cwv-tbt-needs-work', `TBT is ${Math.round(metrics.TBT)}ms (needs improvement — target: under ${CWV_THRESHOLDS.TBT.good}ms)`);
-      }
+      if (rating === 'poor') addFinding('cwv-tbt-poor', `TBT is ${Math.round(metrics.TBT)}ms (poor — should be under 200ms)`);
+      else if (rating === 'needs-improvement') addFinding('cwv-tbt-needs-work', `TBT is ${Math.round(metrics.TBT)}ms (needs improvement — target: under 200ms)`);
       metrics.TBT_rating = rating;
     }
 
     // Speed Index
     if (metrics.SI !== null) {
       const rating = rateMetric(metrics.SI, CWV_THRESHOLDS.SI);
-      const siSec = (metrics.SI / 1000).toFixed(1);
-      if (rating === 'poor') {
-        addFinding('cwv-si-poor', `Speed Index is ${siSec}s (poor — should be under ${CWV_THRESHOLDS.SI.good / 1000}s)`);
-      } else if (rating === 'needs-improvement') {
-        addFinding('cwv-si-needs-work', `Speed Index is ${siSec}s (needs improvement — target: under ${CWV_THRESHOLDS.SI.good / 1000}s)`);
-      }
+      const val = (metrics.SI / 1000).toFixed(1);
+      if (rating === 'poor') addFinding('cwv-si-poor', `Speed Index is ${val}s (poor — should be under 3.4s)`);
+      else if (rating === 'needs-improvement') addFinding('cwv-si-needs-work', `Speed Index is ${val}s (needs improvement — target: under 3.4s)`);
       metrics.SI_rating = rating;
     }
 
-    // Calculate CWV score
+    // Extract top opportunities for actionable advice
+    const opportunities = Object.values(audits)
+      .filter(a => a.score !== null && a.score < 1 && a.details?.type === 'opportunity')
+      .map(a => ({
+        id: a.id,
+        savings_ms: Math.round(a.details.overallSavingsMs || 0),
+        message: a.title,
+      }))
+      .sort((a, b) => b.savings_ms - a.savings_ms)
+      .slice(0, 5);
+
+    // Calculate score
     const triggeredRules = new Set(findings.map(f => f.rule));
     let score = 100;
     for (const rule of triggeredRules) {
@@ -226,12 +290,24 @@ export async function runLighthouse(url) {
       url,
       available: true,
       metrics,
+      opportunities,
       findings,
       scores: { performance: score, lighthouseScore: metrics.performanceScore },
       summary,
     };
+  } catch (err) {
+    return {
+      url,
+      available: true,
+      reason: err.message || 'Lighthouse run failed',
+      metrics: null,
+      findings: [],
+      scores: { performance: null },
+      summary: { critical: 0, high: 0, medium: 0, low: 0 },
+    };
   } finally {
-    await chrome.kill();
+    try { unlinkSync(outputFile); } catch { /* ignore */ }
+    try { unlinkSync(tmpDir); } catch { /* ignore */ }
   }
 }
 
@@ -240,41 +316,8 @@ export async function runLighthouse(url) {
 // ---------------------------------------------------------------------------
 
 const args = process.argv.slice(2);
-if (args.length > 0 && args[0] !== 'detect' && args[0] !== 'generate') {
+if (args.length > 0 && !args[0].startsWith('-')) {
   const url = args[0];
-  const jsonFlag = args.includes('--json');
-
-  const result = await runLighthouse(url);
-
-  if (jsonFlag || !process.stdout.isTTY) {
-    console.log(JSON.stringify(result, null, 2));
-  } else {
-    if (!result.available) {
-      console.log(`\n  Lighthouse not available: ${result.reason}\n`);
-      process.exit(0);
-    }
-
-    const m = result.metrics;
-    console.log('');
-    console.log('  Core Web Vitals Report');
-    console.log('  ═══════════════════════');
-    console.log(`  Performance Score: ${m.performanceScore}/100`);
-    console.log('');
-    console.log(`  LCP  (Largest Contentful Paint):  ${(m.LCP / 1000).toFixed(1)}s  [${m.LCP_rating}]`);
-    console.log(`  CLS  (Cumulative Layout Shift):   ${m.CLS.toFixed(3)}   [${m.CLS_rating}]`);
-    console.log(`  FCP  (First Contentful Paint):    ${(m.FCP / 1000).toFixed(1)}s  [${m.FCP_rating}]`);
-    console.log(`  TBT  (Total Blocking Time):       ${Math.round(m.TBT)}ms  [${m.TBT_rating}]`);
-    console.log(`  SI   (Speed Index):               ${(m.SI / 1000).toFixed(1)}s  [${m.SI_rating}]`);
-    console.log('');
-
-    if (result.findings.length > 0) {
-      console.log('  Findings:');
-      for (const f of result.findings) {
-        console.log(`    ${f.severity.toUpperCase().padEnd(8)} ${f.message}`);
-      }
-    } else {
-      console.log('  All Core Web Vitals are good!');
-    }
-    console.log('');
-  }
+  const result = runLighthouse(url);
+  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
 }

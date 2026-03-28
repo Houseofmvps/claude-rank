@@ -42,7 +42,7 @@ Commands:
   scan     Run core SEO scanner (default)
   geo      Run GEO (AI search) scanner
   aeo      Run AEO (answer engine) scanner
-  cwv      Run Core Web Vitals / Lighthouse audit (requires: npm i -g lighthouse chrome-launcher)
+  cwv      Run Core Web Vitals / Lighthouse audit (needs Chrome installed)
   schema   Detect and validate structured data
   help     Show this help message
 
@@ -87,13 +87,12 @@ if (command === 'cwv') {
   const { runLighthouse, isAvailable } = await import(new URL('../tools/lighthouse-scanner.mjs', import.meta.url));
   const check = isAvailable();
   if (!check.available) {
-    console.log(`\n  Core Web Vitals scanner requires Lighthouse.\n`);
-    console.log(`  Install: npm install -g lighthouse chrome-launcher\n`);
-    console.log(`  Then run: claude-rank cwv ${url}\n`);
+    console.log(`\n  Core Web Vitals scanner requires Chrome or Chromium.\n`);
+    console.log(`  Install Google Chrome, then run: claude-rank cwv ${url}\n`);
     process.exit(0);
   }
 
-  const result = await runLighthouse(url);
+  const result = runLighthouse(url);
   if (jsonFlag) {
     console.log(JSON.stringify(result, null, 2));
   } else {

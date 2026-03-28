@@ -25,11 +25,11 @@ describe('Lighthouse scanner', () => {
     assert.equal(typeof mod.runLighthouse, 'function');
   });
 
-  it('runLighthouse returns unavailable status when Lighthouse not installed', async () => {
+  it('runLighthouse returns unavailable status when Chrome not found', async () => {
     const mod = await import('../tools/lighthouse-scanner.mjs');
     const check = mod.isAvailable();
     if (!check.available) {
-      const result = await mod.runLighthouse('https://example.com');
+      const result = mod.runLighthouse('https://example.com');
       assert.equal(result.available, false);
       assert.equal(result.metrics, null);
       assert.deepEqual(result.findings, []);

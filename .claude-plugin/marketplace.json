@@ -1,0 +1,41 @@
+{
+  "name": "claude-rank",
+  "owner": {
+    "name": "Houseofmvps",
+    "email": "houseofmvps2024@gmail.com"
+  },
+  "metadata": {
+    "description": "The most comprehensive SEO/GEO/AEO plugin for Claude Code. 80+ rules, auto-fix, GSC/Bing action plans."
+  },
+  "plugins": [
+    {
+      "name": "claude-rank",
+      "description": "SEO/GEO/AEO audit + auto-fix + Core Web Vitals + schema validation + GSC/Bing action plans",
+      "version": "1.4.1",
+      "source": "./",
+      "author": {
+        "name": "Houseofmvps",
+        "email": "houseofmvps2024@gmail.com"
+      },
+      "homepage": "https://github.com/Houseofmvps/claude-rank",
+      "repository": "https://github.com/Houseofmvps/claude-rank",
+      "license": "MIT",
+      "keywords": [
+        "seo",
+        "geo",
+        "aeo",
+        "ai-search",
+        "claude-code",
+        "marketing",
+        "agency",
+        "structured-data",
+        "schema",
+        "search-optimization",
+        "generative-engine-optimization",
+        "answer-engine-optimization",
+        "lighthouse",
+        "core-web-vitals"
+      ]
+    }
+  ]
+}

@@ -34,18 +34,14 @@ $ claude-rank scan ./my-saas-landing
 ╔════════════════════════════════════════════════╗
 ║          claude-rank SEO Audit                 ║
 ╠════════════════════════════════════════════════╣
-║  Score:  65/100  ██████████░░░░░  NEEDS WORK   ║
+║  Score:  75/100  ███████████░░░░  NEEDS WORK   ║
 ╠════════════════════════════════════════════════╣
 ║  Files scanned: 26                             ║
-║  Findings: 41                                  ║
-║    Critical: 0  High: 1  Medium: 40  Low: 0    ║
+║  Findings: 40                                  ║
+║    Critical: 0  High: 0  Medium: 40  Low: 0    ║
 ╚════════════════════════════════════════════════╝
 
 Findings:
-  HIGH     thin-content
-           Page has only 190 words (minimum recommended: 300)
-           Files: dist/contact/index.html
-
   MEDIUM   title-too-long (18 pages)
            Title is 63 chars (max recommended: 60)
            Files: dist/about/index.html, dist/blog/..., +15 more
@@ -80,39 +76,59 @@ $ claude-rank scan https://houseofmvps.com    # Scan any live URL
 
 ## Quick Start
 
-### Install as a Claude Code plugin (recommended)
-
-```bash
-claude plugin add @houseofmvps/claude-rank
-```
-
-That's it. Restart Claude Code and all 6 skills + 4 agents are active.
-
-### Or use standalone — no plugin install needed
+### Use standalone — no install needed
 
 ```bash
 npx @houseofmvps/claude-rank scan ./my-project          # Local directory
-npx @houseofmvps/claude-rank scan https://example.com    # Live URL
+npx @houseofmvps/claude-rank scan https://example.com    # Live URL (crawls up to 50 pages)
 npx @houseofmvps/claude-rank geo ./my-project            # AI search audit
 npx @houseofmvps/claude-rank aeo ./my-project            # Answer engine audit
 npx @houseofmvps/claude-rank schema ./my-project         # Structured data
 npx @houseofmvps/claude-rank scan ./site --json          # Raw JSON output
+npx @houseofmvps/claude-rank scan ./site --report html   # Agency-ready HTML report
+npx @houseofmvps/claude-rank scan ./site --threshold 80  # CI/CD mode
 ```
 
-### Or install globally
+### Install globally
 
 ```bash
 npm install -g @houseofmvps/claude-rank
 claude-rank scan ./my-project
+claude-rank scan https://example.com --pages 20
+claude-rank cwv https://example.com    # Core Web Vitals (requires Lighthouse)
 ```
 
-### Use in Claude Code
+### Use as a Claude Code Plugin
+
+claude-rank works as a full Claude Code plugin with skills, agents, and slash commands. To install:
+
+**Option 1: Clone and add locally**
+```bash
+# Clone the repo
+git clone https://github.com/Houseofmvps/claude-rank.git
+
+# In Claude Code, add the plugin directory
+/plugin install ./claude-rank
+```
+
+**Option 2: Install from npm and link**
+```bash
+# Install the package
+npm install -g @houseofmvps/claude-rank
+
+# Find where it's installed
+npm root -g
+# → /usr/local/lib/node_modules
+
+# In Claude Code, add the plugin directory
+/plugin install /usr/local/lib/node_modules/@houseofmvps/claude-rank
+```
 
 Once installed, use slash commands inside any Claude Code session:
 
 ```
 /rank          # Smart routing — detects what your project needs
-/rank audit    # Full 8-phase SEO/GEO/AEO audit with auto-fix
+/rank audit    # Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC action plan
 /rank geo      # Deep AI search optimization audit
 /rank aeo      # Answer engine optimization audit
 /rank fix      # Auto-fix all findings in one command
@@ -143,10 +159,10 @@ That's not an SEO problem. That's a visibility problem across every search surfa
 /rank audit
 ```
 
-One command. Three scanners run in parallel — SEO, GEO, and AEO. 80+ rules checked. Every finding gets an automated fix. Score tracked over time.
+One command. Three scanners run in parallel — SEO, GEO, and AEO. 80+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
 
 ```
-SEO Score:   87/100  ████████████░░  (37 rules)
+SEO Score:   87/100  ████████████░░  (39 rules)
 GEO Score:   92/100  █████████████░  (25 rules)
 AEO Score:   78/100  ██████████░░░░  (12 rules)
 Overall:     86/100  READY TO RANK
@@ -193,6 +209,25 @@ Answer Engine Optimization. Featured snippets, People Also Ask, voice search.
 | **Voice Search** | Concise answers under 29 words (Google voice search average), conversational phrasing |
 | **Rich Results** | Featured image, breadcrumb markup, review schema |
 
+### Core Web Vitals (Lighthouse)
+
+Optional performance scoring powered by Lighthouse:
+
+```bash
+npm install -g lighthouse chrome-launcher    # One-time setup
+claude-rank cwv https://example.com          # Run CWV audit
+```
+
+| Metric | What it measures | Good | Poor |
+|---|---|---|---|
+| **LCP** | Largest Contentful Paint | < 2.5s | > 4.0s |
+| **CLS** | Cumulative Layout Shift | < 0.1 | > 0.25 |
+| **FCP** | First Contentful Paint | < 1.8s | > 3.0s |
+| **TBT** | Total Blocking Time (proxy for INP) | < 200ms | > 600ms |
+| **SI** | Speed Index | < 3.4s | > 5.8s |
+
+Graceful fallback: if Lighthouse isn't installed, claude-rank tells the user how to enable it. No crashes.
+
 ### Auto-Fix Generators
 
 Every finding has a fix. Not "consider adding" — actual file generation:
@@ -204,32 +239,26 @@ Every finding has a fix. Not "consider adding" — actual file generation:
 | **llms.txt** | AI discoverability file from your package.json |
 | **JSON-LD Schema** | 12 types: Organization, Article, Product, FAQPage, HowTo, LocalBusiness, Person, WebSite, BreadcrumbList, SoftwareApplication, VideoObject, ItemList |
 
-### Core Web Vitals (Lighthouse)
+### Post-Audit Action Plans (GSC + Bing)
 
-Optional performance scoring powered by Lighthouse. Requires `lighthouse` and `chrome-launcher`:
+**This is what separates claude-rank from every other SEO scanner.** After fixing issues, it tells you exactly what to do next:
 
-```bash
-npm install -g lighthouse chrome-launcher
-claude-rank cwv https://example.com
-```
+**Google Search Console:**
+- Submit your new sitemap.xml
+- Request indexing for your money pages (homepage, pricing, top landing pages)
+- Check index coverage — fix "Crawled but not indexed" pages
+- Validate rich results for new JSON-LD schema
+- Monitor Core Web Vitals
 
-| Metric | What it measures | Good | Poor |
-|---|---|---|---|
-| **LCP** | Largest Contentful Paint | < 2.5s | > 4.0s |
-| **CLS** | Cumulative Layout Shift | < 0.1 | > 0.25 |
-| **FCP** | First Contentful Paint | < 1.8s | > 3.0s |
-| **TBT** | Total Blocking Time (proxy for INP) | < 200ms | > 600ms |
-| **SI** | Speed Index | < 3.4s | > 5.8s |
+**Bing Webmaster Tools:**
+- Submit URLs (Bing allows 10,000/day — much more generous than Google)
+- Enable IndexNow for near-instant re-indexing
+- Verify robots.txt — Bingbot powers Microsoft Copilot and ChatGPT Browse
 
-Graceful fallback: if Lighthouse isn't installed, tells the user how to enable it.
-
-### Post-Audit Action Plans
-
-Every audit now ends with exact step-by-step instructions for:
-
-- **Google Search Console** — submit sitemap, request indexing for money pages, check coverage, validate rich results, monitor Core Web Vitals
-- **Bing Webmaster Tools** — submit URLs, enable IndexNow, verify robots.txt for Copilot/ChatGPT visibility
-- **AI Search Verification** — test visibility in ChatGPT, Perplexity, Gemini, Google AI Overviews
+**AI Search Verification:**
+- Test your brand in ChatGPT, Perplexity, Gemini, Google AI Overviews
+- Verify llms.txt is accessible
+- Weekly monitoring checklist for AI citation tracking
 
 ### Schema Engine — Full CRUD
 
@@ -237,10 +266,38 @@ Not just detection. Full lifecycle management:
 
 ```
 Detect  → Find all JSON-LD in your HTML files
-Validate → Check against Google's requirements
+Validate → Check against Google's required fields (14 schema types)
 Generate → Create missing schema from your project data
 Inject   → Add generated schema into your HTML <head>
 ```
+
+### Multi-Page URL Crawling
+
+```bash
+claude-rank scan https://example.com              # Crawls up to 50 pages
+claude-rank scan https://example.com --pages 10    # Limit to 10 pages
+claude-rank scan https://example.com --single      # Just one page
+```
+
+- BFS crawl following internal links with 3 concurrent fetches
+- Cross-page analysis: duplicate titles, duplicate descriptions, canonical conflicts
+- Redirect chain detection (flags chains with 2+ hops)
+
+### HTML Report Export
+
+```bash
+claude-rank scan ./my-project --report html
+```
+
+Generates a self-contained `claude-rank-report.html` — dark theme, score cards, findings table. No external dependencies. Ready to send to clients.
+
+### CI/CD Mode
+
+```bash
+claude-rank scan ./my-project --threshold 80
+```
+
+Exits with code 1 if score drops below your threshold. Add to your CI pipeline to prevent SEO regressions.
 
 ### Score Tracking
 
@@ -273,19 +330,23 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 
 | Command | Description |
 |---------|-------------|
-| `claude-rank scan ./project` | Full SEO scan (37 rules) |
+| `claude-rank scan ./project` | Full SEO scan (39 rules) |
+| `claude-rank scan https://example.com` | Crawl and scan a live site (up to 50 pages) |
 | `claude-rank geo ./project` | GEO scan — AI search optimization (25 rules) |
 | `claude-rank aeo ./project` | AEO scan — answer engine optimization (12 rules) |
-| `claude-rank schema ./project` | Detect structured data across all HTML |
 | `claude-rank cwv https://example.com` | Core Web Vitals via Lighthouse (optional) |
+| `claude-rank schema ./project` | Detect and validate structured data |
+| `claude-rank scan ./site --report html` | Generate agency-ready HTML report |
+| `claude-rank scan ./site --threshold 80` | CI mode — exit code 1 if score < 80 |
+| `claude-rank scan ./site --json` | Raw JSON output for scripting |
 | `claude-rank help` | Show available commands |
 
-## Slash Commands (Claude Code)
+## Slash Commands (Claude Code Plugin)
 
 | Command | Description |
 |---------|-------------|
 | `/rank` | Smart routing — detects what your project needs |
-| `/rank audit` | Full 8-phase SEO/GEO/AEO audit with auto-fix |
+| `/rank audit` | Full 9-phase SEO/GEO/AEO audit with auto-fix + GSC/Bing action plan |
 | `/rank geo` | Deep GEO audit targeting AI search visibility |
 | `/rank aeo` | Answer engine optimization audit |
 | `/rank fix` | Auto-fix all findings in one command |
@@ -300,12 +361,12 @@ Each audit produces separate SEO, GEO, and AEO scores plus a composite. Same rul
 | SEO rules | 39 | ~20 |
 | GEO — AI search (Perplexity, ChatGPT, Gemini) | 25 rules | Basic |
 | AEO — featured snippets, voice search | 12 rules | None |
-| Auto-fix generators | Yes | No |
-| Schema management (detect / validate / generate / inject) | Full CRUD | Detect only |
 | Core Web Vitals / Lighthouse | Yes (optional) | No |
 | Redirect chain detection | Yes | No |
 | Schema validation (Google required fields) | 14 types | No |
 | Post-audit GSC/Bing action plans | Yes | No |
+| Auto-fix generators | Yes | No |
+| Schema management (detect / validate / generate / inject) | Full CRUD | Detect only |
 | Score tracking with history and trends | Yes | None |
 | Cross-page analysis (duplicates, orphans, canonicals) | Yes | No |
 | Multi-page URL crawling (up to 50 pages) | Yes | No |
@@ -350,7 +411,7 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 |---|---|---|
 | **Tools** | 9 | SEO scanner (39 rules), GEO scanner (25 rules), AEO scanner (12 rules), Lighthouse/CWV scanner, schema engine, robots analyzer, sitemap analyzer, llms.txt generator, audit history |
 | **Skills** | 6 | /rank, /rank audit, /rank geo, /rank aeo, /rank fix, /rank schema |
-| **Agents** | 4 | SEO auditor, GEO auditor, AEO auditor, Schema auditor |
+| **Agents** | 4 | SEO auditor (project-type-aware), GEO auditor (AI readiness levels), AEO auditor (snippet opportunities), Schema auditor (Google validation) |
 | **Commands** | 6 | All slash commands above |
 | **Research** | 3 | SEO benchmarks, GEO research, schema catalog |
 
@@ -364,13 +425,15 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 Single runtime dependency: `htmlparser2` (30KB)
 
+Optional for Core Web Vitals: `lighthouse` + `chrome-launcher`
+
 ---
 
 ## Sponsor This Project
 
 I built claude-rank alone — nights and weekends, between building my own SaaS products. No VC funding. No team. Just one person who got tired of being invisible to AI search and decided to fix it for everyone.
 
-This plugin is **free forever.** No pro tier. No paywalls. No "upgrade to unlock." Every feature you just read about — all 8 tools, 6 skills, 4 agents — is yours, completely free.
+This plugin is **free forever.** No pro tier. No paywalls. No "upgrade to unlock." Every feature you just read about — all 9 tools, 6 skills, 4 agents — is yours, completely free.
 
 But building and maintaining something this comprehensive takes real time. Every scanner rule I add, every false positive I fix, every new AI crawler I track — that's time I'm not spending on my own products.
 
@@ -408,8 +471,12 @@ MIT — [LICENSE](LICENSE). **Free forever.** No pro tier. No paywalls.
 
 <div align="center">
 
-**If claude-rank helped you rank higher, [star the repo](https://github.com/Houseofmvps/claude-rank) and tell a friend.**
+### If claude-rank helped you rank higher, star the repo — it helps others find it too.
 
-[![Star on GitHub](https://img.shields.io/github/stars/Houseofmvps/claude-rank?style=for-the-badge&logo=github&color=gold)](https://github.com/Houseofmvps/claude-rank/stargazers)
+[![Star on GitHub](https://img.shields.io/github/stars/Houseofmvps/claude-rank?style=for-the-badge&logo=github&color=gold&label=Star%20on%20GitHub)](https://github.com/Houseofmvps/claude-rank)
+
+**Every star makes this project more visible to developers who need it.**
+
+[Star it now](https://github.com/Houseofmvps/claude-rank) | [Follow @kaileskkhumar](https://x.com/kaileskkhumar) | [Sponsor](https://github.com/sponsors/Houseofmvps)
 
 </div>
