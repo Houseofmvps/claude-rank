@@ -96,7 +96,8 @@ export function scanDirectory(rootDir) {
     totalImages += state.imageCount || 0;
     totalInlineCss += state.inlineCssSize || 0;
     totalInlineJs += state.inlineJsSize || 0;
-    totalBlockingScripts += (state.totalScripts - state.deferredScripts);
+    const pageBlockingScripts = state.totalScripts - state.deferredScripts;
+    if (pageBlockingScripts > totalBlockingScripts) totalBlockingScripts = pageBlockingScripts;
 
     if (state.externalScriptDomains) {
       for (const d of state.externalScriptDomains) totalExternalDomains.add(d);
@@ -177,8 +178,8 @@ export function scanDirectory(rootDir) {
     }
   }
 
-  if (totalBlockingScripts > 5) {
-    add('excessive-blocking-scripts', `${totalBlockingScripts} render-blocking scripts detected — add async/defer to prevent slow first paint`);
+  if (totalBlockingScripts > 3) {
+    add('excessive-blocking-scripts', `${totalBlockingScripts} render-blocking scripts on a single page — add async/defer to prevent slow first paint`);
   }
 
   if (totalInlineCss > 50000) {

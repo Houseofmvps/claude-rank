@@ -183,7 +183,7 @@ function analyzePage(filePath) {
   const questionH2sWithNext = h2WithNext.filter(h => isQuestionHeading(h.headingText));
   const hasMissingDirectAnswer = questionH2sWithNext.some(h => {
     if (!h.nextParagraph) return true;
-    return firstSentenceWordCount(h.nextParagraph) > 60;
+    return firstSentenceWordCount(h.nextParagraph) > 150;
   });
 
   // Count images (including total <img> tags)

@@ -189,6 +189,21 @@ function fileExists(filePath) {
   }
 }
 
+/**
+ * Detect the effective HTML root for link resolution.
+ * If the HTML file lives inside dist/, build/, or out/, return that subdirectory
+ * as the root for absolute href resolution (e.g. "/blog" → "dist/blog").
+ */
+function detectHtmlRoot(rootDir, filePath) {
+  const rel = path.relative(rootDir, filePath);
+  for (const dir of ['dist', 'build', 'out']) {
+    if (rel.startsWith(dir + path.sep)) {
+      return path.join(rootDir, dir);
+    }
+  }
+  return rootDir;
+}
+
 // ---------------------------------------------------------------------------
 // Per-file rule checks
 // ---------------------------------------------------------------------------
@@ -550,13 +565,15 @@ function checkBrokenLinks(allStates, rootDir) {
       // If the original href was like /#section (root + hash), skip — it's an in-page anchor
       if (href.startsWith('/#')) continue;
 
-      // Resolve the href to a filesystem path
+      // Resolve the href to a filesystem path.
+      // When HTML lives in a subdirectory (dist/, build/, out/), absolute
+      // hrefs like "/blog" must resolve relative to *that* subdirectory,
+      // not the project root.
+      const htmlDir = detectHtmlRoot(rootDir, filePath);
       let resolved;
       if (cleanHref.startsWith('/')) {
-        // Absolute path from root
-        resolved = path.join(rootDir, cleanHref);
+        resolved = path.join(htmlDir, cleanHref);
       } else {
-        // Relative path from current file's directory
         resolved = path.resolve(path.dirname(filePath), cleanHref);
       }
 
@@ -567,7 +584,6 @@ function checkBrokenLinks(allStates, rootDir) {
       // 1. Exact file
       // 2. As .html file (e.g. /about -> about.html)
       // 3. As directory with index.html (e.g. /about -> about/index.html)
-      // 4. As directory with trailing slash (e.g. /about/ -> about/index.html)
       const exists =
         fileExists(cleanResolved) ||
         fileExists(cleanResolved + '.html') ||
@@ -693,10 +709,11 @@ function crossPageChecks(allStates, rootDir) {
   }
 
   // --- Phase 1: Duplicate content detection ---
+  // Use mainText (content inside <main>) to avoid false positives from shared nav/footer
   if (allStates.length > 1) {
     const fingerprints = [];
     for (const { filePath, state } of allStates) {
-      const words = (state.bodyText || '').toLowerCase().split(/\s+/).filter(w => w.length > 0).slice(0, 200);
+      const words = (state.mainText || state.bodyText || '').toLowerCase().split(/\s+/).filter(w => w.length > 0).slice(0, 200);
       fingerprints.push({ filePath, words, wordSet: new Set(words) });
     }
 

@@ -230,8 +230,14 @@ function extractSchemaTypes(jsonLdContent) {
 function isQuestionHeading(text) {
   const lower = text.toLowerCase().trim();
   if (MARKETING_HEADERS.has(lower)) return false;
+  // Headers ending with ? are always questions
+  if (lower.endsWith('?')) return true;
+  // Check first word
   const firstWord = lower.split(/\s+/)[0] || '';
-  return QUESTION_WORDS.has(firstWord);
+  if (QUESTION_WORDS.has(firstWord)) return true;
+  // Common multi-word question starts (e.g. "Top 5 ways to...", "X vs Y")
+  if (/^(?:top \d|best \d|\d+ (?:ways|tips|reasons|steps|mistakes))/.test(lower)) return false;
+  return false;
 }
 
 // ---------------------------------------------------------------------------

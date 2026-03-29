@@ -665,8 +665,10 @@ export function parseHtml(htmlString) {
   const mainTrimmed = mainTextBuffer.trim();
   if (mainTrimmed) {
     state.mainContentWordCount = mainTrimmed.split(/\s+/).filter(Boolean).length;
+    state.mainText = mainTrimmed;
   } else {
     state.mainContentWordCount = state.wordCount;
+    state.mainText = trimmed; // fallback to full body text
   }
 
   // Deduplicate JSON-LD content — text events fire once per script block
