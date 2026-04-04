@@ -1,10 +1,10 @@
 <div align="center">
 
-<img src="assets/hero-banner.png" alt="claude-rank — SEO/GEO/AEO Plugin for Claude Code" width="100%"/>
+<img src="assets/hero-banner.png" alt="claude-rank — AI Readiness + Search Visibility for Claude Code" width="100%"/>
 
-### A Claude Code plugin that tells you why your site won't get cited by AI — and fixes the boring discoverability files automatically.
+### AI Readiness and Search Visibility scanner for Claude Code. Find out if AI engines can discover, crawl, and cite your site — then fix what's blocking them.
 
-**170+ rules. 10 scanners. URL + directory scanning. Auto-fix for robots.txt, sitemap.xml, llms.txt, and JSON-LD.**
+**10 scanners. 170+ checks. Auto-fix for robots.txt, sitemap.xml, llms.txt, and JSON-LD. Works on local projects and live URLs.**
 
 [![CI](https://img.shields.io/github/actions/workflow/status/Houseofmvps/claude-rank/ci.yml?style=for-the-badge&logo=github&label=CI)](https://github.com/Houseofmvps/claude-rank/actions/workflows/ci.yml)
 [![npm version](https://img.shields.io/npm/v/%40houseofmvps%2Fclaude-rank?style=for-the-badge&logo=npm&color=CB3837)](https://www.npmjs.com/package/@houseofmvps/claude-rank)
@@ -107,17 +107,17 @@ claude-rank scan ./my-project
 
 ## The Problem
 
-You shipped your SaaS. Traffic is flat. You Google your product name — page 3. You ask ChatGPT about your niche — your site isn't mentioned. Perplexity doesn't cite you. Google AI Overviews skips you entirely.
+You shipped your SaaS. You ask ChatGPT about your niche — your site isn't mentioned. Perplexity doesn't cite you. Google AI Overviews skips you entirely. Traditional search traffic is flat too.
 
-Most SEO tools check title tags and call it a day. They don't know that:
+Most developers don't realize:
 
-- **AI search engines are replacing traditional search** — and your content isn't optimized for them
-- **Featured snippets and voice search** have completely different optimization rules than regular SEO
 - **Your robots.txt is blocking GPTBot, PerplexityBot, and ClaudeBot** — AI can't cite what it can't crawl
 - **You don't have an llms.txt** — the file AI assistants look for to understand your project
-- **Your structured data is missing or broken** — you're invisible to rich results
+- **Your structured data is missing or broken** — you're invisible to rich results and AI answers
+- **Your content isn't structured for AI extraction** — no clear definitions, no citable passages, no data points
+- **Basic search hygiene is off** — missing meta tags, broken links, no sitemap
 
-That's not an SEO problem. That's a visibility problem across every search surface that exists in 2026.
+That's not just a search ranking problem. It's an AI visibility problem. Your site exists, but AI doesn't know it.
 
 ## The Solution
 
@@ -125,27 +125,27 @@ That's not an SEO problem. That's a visibility problem across every search surfa
 /claude-rank:rank-audit
 ```
 
-One command. Ten scanners run in parallel — SEO, GEO, AEO, AI Citability, Content Intelligence, Keyword Clustering, Performance, Vertical SEO, Security, and Content Brief. 170+ rules checked. Every finding gets an automated fix. Score tracked over time. **Then it tells you exactly what to do in Google Search Console and Bing Webmaster Tools.**
+One command. Ten scanners check your AI readiness and search visibility in parallel. 170+ checks across AI discoverability, search hygiene, content structure, performance, and security. Every finding gets an automated fix. Score tracked over time. **Then it tells you what to submit to Google Search Console and Bing Webmaster Tools.**
 
 ```
-SEO Score:         87/100  ████████████░░  (54 rules)
-GEO Score:         92/100  █████████████░  (45 rules + E-E-A-T)
-AEO Score:         78/100  ██████████░░░░  (12 rules)
-Citability Score:  65/100  ████████░░░░░░  (7 dimensions)
-Performance:       90/100  █████████████░  (20 rules)
-Security:          80/100  ███████████░░░  (15 rules)
-Overall:           86/100  READY TO RANK
+Search Hygiene:    87/100  ████████████░░  (54 checks)
+AI Discoverability:92/100  █████████████░  (45 checks + E-E-A-T)
+Answer Readiness:  78/100  ██████████░░░░  (12 checks)
+AI Citability:     65/100  ████████░░░░░░  (7 dimensions)
+Performance:       90/100  █████████████░  (20 checks)
+Security:          80/100  ███████████░░░  (15 checks)
+Overall:           86/100  AI-READY
 ```
 
-**Score below 80?** Run `/claude-rank:rank-fix` and it auto-generates what's missing — robots.txt, sitemap.xml, llms.txt, JSON-LD schema — then re-scans to show your improvement.
+**Score below 80?** Run `/claude-rank:rank-fix` to auto-generate what's missing (robots.txt, sitemap.xml, llms.txt, JSON-LD) then re-scan to see your improvement.
 
 ---
 
 ## All 10 Scanners
 
-### 1. SEO Scanner — 54 Rules
+### 1. Search Hygiene Scanner — 54 Checks
 
-Traditional search optimization. The foundation.
+Practical on-page checks that developers miss. Not a replacement for a full SEO strategy — just the technical baseline your site needs.
 
 | Category | What it checks |
 |---|---|
@@ -155,9 +155,9 @@ Traditional search optimization. The foundation.
 | **Structured Data** | JSON-LD presence, validation against Google's required fields (14 schema types), dateModified freshness |
 | **Cross-Page** | Duplicate titles, duplicate descriptions, duplicate content (Jaccard >80%), canonical conflicts, orphan pages, broken internal links |
 
-### 2. GEO Scanner — 45 Rules + E-E-A-T
+### 2. AI Discoverability Scanner — 45 Checks + E-E-A-T
 
-Generative Engine Optimization. For AI search: ChatGPT, Perplexity, Gemini, Google AI Overviews.
+Checks whether AI search engines (ChatGPT, Perplexity, Gemini, Google AI Overviews) can find and cite your content.
 
 | Category | What it checks |
 |---|---|
@@ -167,9 +167,9 @@ Generative Engine Optimization. For AI search: ChatGPT, Perplexity, Gemini, Goog
 | **Citation Readiness** | 134-167 word passage sweet spot, direct answers in first 40-60 words, citations to .edu/.gov/.org |
 | **E-E-A-T** | Author bio, credentials/expertise, about/team page, reviews/testimonials, external authority links |
 
-### 3. AEO Scanner — 12 Rules
+### 3. Answer Readiness Scanner — 12 Checks
 
-Answer Engine Optimization. Featured snippets, People Also Ask, voice search.
+Checks if your content is structured to appear in featured snippets, People Also Ask, and voice search results.
 
 | Category | What it checks |
 |---|---|
@@ -179,7 +179,7 @@ Answer Engine Optimization. Featured snippets, People Also Ask, voice search.
 
 ### 4. AI Citability Score — 7 Dimensions
 
-Proprietary scoring algorithm. Scores how likely AI engines are to cite each page (0-100).
+Estimates how likely AI engines are to cite each page based on content structure signals (0-100).
 
 | Dimension | Weight | What it measures |
 |---|---|---|
@@ -230,9 +230,9 @@ Generate SEO-optimized writing briefs from your existing content.
 | **Related Keywords** | Extracted from related pages via TF-IDF |
 | **GEO Tips** | Statistics to include, expert quotes, citation opportunities |
 
-### 8. Performance + Mobile Scanner — 20 Rules
+### 8. Performance + Mobile Scanner — 20 Checks
 
-Performance and mobile-first indexing checks from static HTML. No Chrome needed.
+Performance and mobile checks from static HTML analysis. Catches common issues without needing Chrome.
 
 | Category | What it checks |
 |---|---|
@@ -244,18 +244,18 @@ Performance and mobile-first indexing checks from static HTML. No Chrome needed.
 | **Images** | Responsive images (srcset/sizes), modern formats (WebP/AVIF) |
 | **Mobile** | Missing viewport meta, non-responsive viewport, small tap targets (<44px), small font sizes (<12px), fixed-width elements (>500px) |
 
-### 9. Vertical SEO — 20 Rules
+### 9. Vertical Scanner — 20 Checks
 
-Auto-detects e-commerce and local business sites, then runs specialized checks. SaaS sites with pricing pages are correctly excluded via strong/weak signal weighting.
+Auto-detects e-commerce and local business sites, then runs specialized structured data and content checks. SaaS sites with pricing pages are correctly excluded via strong/weak signal weighting.
 
 | Type | Rules | What it checks |
 |---|---|---|
 | **E-Commerce** | 10 | Product schema, Offer schema, AggregateRating, reviews, product images, descriptions, breadcrumbs, pricing, availability, duplicate descriptions |
 | **Local Business** | 10 | LocalBusiness schema, NAP data, geo coordinates, opening hours, Google Maps, clickable phone, local keywords, address element, service area pages |
 
-### 10. Security & Headers — 15 Rules
+### 10. Security & Headers — 15 Checks
 
-Security compliance that directly affects SEO (Google confirmed HTTPS as a ranking signal).
+Security headers that affect both trust signals and search visibility.
 
 | Category | What it checks |
 |---|---|
@@ -406,40 +406,26 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 
 ---
 
-## Comparison: claude-rank vs claude-seo
+## What claude-rank covers
 
-| Feature | claude-rank | claude-seo |
-|---------|:-----------:|:----------:|
-| SEO rules | 54 | ~20 |
-| GEO — AI search (Perplexity, ChatGPT, Gemini) | 45 rules + E-E-A-T | Basic |
-| AEO — featured snippets, voice search | 12 rules | None |
-| AI Citability Score (7-dimension) | Yes | No |
-| Content Intelligence (readability, duplicates) | Yes | No |
-| Keyword Clustering (TF-IDF) | Yes | No |
-| Content Brief Generator | Yes | No |
-| Performance + Mobile Audit | 20 rules | No |
-| Mobile-first indexing checks | 5 rules | No |
-| Vertical SEO (e-commerce + local) | Auto-detection | No |
-| Security Headers Audit | Yes | No |
-| Competitive X-Ray (50+ tech patterns) | Side-by-side | No |
-| Core Web Vitals / Lighthouse | Yes | No |
-| Schema engine (detect/validate/generate/inject) | Full CRUD | Detect only |
-| Auto-fix generators (robots.txt, sitemap, llms.txt, JSON-LD) | Yes | No |
-| Post-audit GSC/Bing action plans | Yes | No |
-| Cross-page analysis (duplicates, orphans, canonicals) | Yes | No |
-| Multi-page URL crawling | Up to 50 pages | No |
-| HTML report export | Agency-ready | No |
-| CI/CD threshold mode | Yes | No |
-| Score tracking with trends | Yes | No |
-| Broken internal link detection | Filesystem resolution | No |
-| Image optimization audit (srcset, WebP/AVIF) | Yes | No |
-| URL scanning for all commands | Yes | No |
-| GSC CSV data integration | Yes | No |
-| Search intent classification | Yes | No |
-| Intent-aware cannibalization | Yes | No |
-| AI bot detection | 11 bots | Basic |
+| Area | Checks | What you get |
+|------|:------:|-------------|
+| Search hygiene | 54 | Meta tags, headings, structured data, sitemaps, broken links |
+| AI discoverability | 45 + E-E-A-T | AI crawler access, llms.txt, citation-ready content, authority signals |
+| Answer readiness | 12 | Snippet fitness, voice search, FAQ/HowTo schema |
+| AI citability | 7 dimensions | Per-page citability score with actionable breakdown |
+| Content quality | Deep analysis | Readability, duplicates, thin content, internal linking, topic clusters |
+| Keywords | TF-IDF | Cannibalization, content gaps, pillar suggestions |
+| Content briefs | Generator | Outlines, word count targets, keyword suggestions |
+| Performance + mobile | 20 | CLS risk, render blocking, image optimization, tap targets |
+| Vertical (e-commerce/local) | 20 | Product schema, LocalBusiness, NAP, reviews |
+| Security headers | 15 | CSP, HTTPS, SRI, mixed content |
+| Competitive X-Ray | 50+ patterns | Side-by-side tech stack + content + conversion comparison |
+| Auto-fix | 4 generators | robots.txt, sitemap.xml, llms.txt, JSON-LD |
+| Schema engine | Full CRUD | Detect, validate, generate, inject structured data |
+| Reporting | HTML + JSON + CI | Agency-ready reports, CI/CD threshold, score tracking |
 
-**claude-seo tells you what's wrong. claude-rank fixes it.**
+**claude-rank is a developer tool for AI readiness and search visibility. It's not a replacement for working with an SEO professional on strategy, link building, or content marketing.**
 
 ---
 
@@ -457,9 +443,9 @@ Same rule on multiple pages = one deduction (not N). Consistent across all 10 sc
 |---|---|
 | **No shell injection** | `execFileSync` with array args — zero shell interpolation |
 | **SSRF protection** | All HTTP tools block private IPs, cloud metadata, non-HTTP schemes |
-| **No telemetry** | Zero data collection. No phone-home. Ever. |
+| **No telemetry** | Zero data collection. No phone home. Ever. |
 | **1 dependency** | `htmlparser2` only (30KB). No native bindings. No `node-gyp`. |
-| **372 tests** | All scanners, CLI, integration, security tests |
+| **372 tests** | All scanners, CLI, integration, and security tests |
 | **File safety** | 10MB read cap. 5MB response cap. Restrictive write permissions. |
 
 See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
@@ -470,8 +456,8 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 | Category | Count |
 |---|---|
-| **Scanners** | 10 (SEO, GEO, AEO, Citability, Content, Keywords, Briefs, Perf+Mobile, Vertical, Security) |
-| **Rules** | 170+ across all scanners |
+| **Scanners** | 10 (Search Hygiene, AI Discoverability, Answer Readiness, Citability, Content, Keywords, Briefs, Perf+Mobile, Vertical, Security) |
+| **Checks** | 170+ across all scanners |
 | **Tools** | 18 (scanners + GSC analyzer + schema engine + robots/sitemap/llms.txt + competitive X-ray + formatter) |
 | **CLI Commands** | 16 (all accept URLs) |
 | **Agents** | 9 autonomous auditors |
@@ -496,7 +482,7 @@ I built claude-rank alone — nights and weekends, between building my own SaaS 
 
 This plugin is **free forever.** No pro tier. No paywalls. No "upgrade to unlock." Every feature — all 10 scanners, 12 slash commands, 9 agents — is yours, completely free.
 
-If claude-rank helped your site rank higher — one AI citation it earned you, one missing schema it generated, one robots.txt fix that unblocked GPTBot — I'd be grateful if you considered sponsoring.
+If claude-rank helped your site get cited by AI, fixed a robots.txt that was blocking GPTBot, or generated the structured data you kept putting off, I'd be grateful if you considered sponsoring.
 
 [![Sponsor on GitHub](https://img.shields.io/badge/Sponsor_on_GitHub-EA4AAA?style=for-the-badge&logo=githubsponsors&logoColor=white)](https://github.com/sponsors/Houseofmvps)
 
@@ -528,7 +514,7 @@ MIT — [LICENSE](LICENSE). **Free forever.** No pro tier. No paywalls.
 
 <div align="center">
 
-### If claude-rank helped you rank higher, star the repo — it helps others find it too.
+### If claude-rank made your site visible to AI, star the repo so others can find it too.
 
 [![Star on GitHub](https://img.shields.io/github/stars/Houseofmvps/claude-rank?style=for-the-badge&logo=github&color=gold&label=Star%20on%20GitHub)](https://github.com/Houseofmvps/claude-rank)
 
