@@ -3,7 +3,12 @@
     "PostToolUse": [
       {
         "matcher": "Edit|Write",
-        "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qiE '\\.html?$'; then node ${CLAUDE_PLUGIN_ROOT}/tools/schema-engine.mjs validate \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi"
+        "hooks": [
+          {
+            "type": "command",
+            "command": "if echo \"$CLAUDE_FILE_PATH\" | grep -qiE '\\.html?$'; then node ${CLAUDE_PLUGIN_ROOT}/tools/schema-engine.mjs validate \"$CLAUDE_FILE_PATH\" 2>/dev/null; fi"
+          }
+        ]
       }
     ]
   }

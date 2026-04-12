@@ -1,6 +1,6 @@
 {
   "name": "@houseofmvps/claude-rank",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Claude Code plugin that tells you why your site won't get cited by AI — and fixes the discoverability files automatically.",
   "type": "module",
   "bin": {
