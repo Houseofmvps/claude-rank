@@ -1,0 +1,32 @@
+cff-version: 1.2.0
+message: "If you use claude-rank in research, content, or production work, please cite it as below."
+title: "claude-rank: AI Readiness and Search Visibility scanner for Claude Code"
+abstract: "Claude Code plugin that tells you why your site won't get cited by AI — and fixes the discoverability files automatically. 10 scanners, 170+ rules covering SEO (Google, Bing), GEO (Generative Engine Optimization — Perplexity, ChatGPT, Gemini), and AEO (Answer Engine Optimization — featured snippets, voice search). Auto-fix for robots.txt, sitemap.xml, llms.txt, and JSON-LD."
+authors:
+  - family-names: Khumar
+    given-names: Kailesk
+    affiliation: "HouseofMVPs and Kailxlabs"
+    website: "https://www.kailxlabs.co"
+    email: "houseofmvps2024@gmail.com"
+repository-code: "https://github.com/Houseofmvps/claude-rank"
+url: "https://houseofmvps.com"
+license: MIT
+type: software
+keywords:
+  - seo
+  - geo
+  - aeo
+  - ai-search
+  - ai-search-optimization
+  - generative-engine-optimization
+  - answer-engine-optimization
+  - claude-code
+  - llms-txt
+  - structured-data
+identifiers:
+  - type: url
+    value: "https://www.npmjs.com/package/@houseofmvps/claude-rank"
+    description: "npm package (scoped)"
+  - type: url
+    value: "https://github.com/Houseofmvps/claude-rank"
+    description: "GitHub repository"

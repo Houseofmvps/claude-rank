@@ -46,15 +46,38 @@
     "answer-engine-optimization"
   ],
   "author": {
-    "name": "Houseofmvps",
+    "name": "Kailesk Khumar",
     "email": "houseofmvps2024@gmail.com",
-    "url": "https://houseofmvps.com"
+    "url": "https://www.kailxlabs.co"
   },
+  "contributors": [
+    {
+      "name": "HouseofMVPs",
+      "url": "https://houseofmvps.com"
+    },
+    {
+      "name": "Kailxlabs",
+      "url": "https://www.kailxlabs.co"
+    }
+  ],
   "repository": {
     "type": "git",
     "url": "https://github.com/Houseofmvps/claude-rank"
   },
-  "homepage": "https://github.com/Houseofmvps/claude-rank",
+  "homepage": "https://github.com/Houseofmvps/claude-rank#readme",
+  "bugs": {
+    "url": "https://github.com/Houseofmvps/claude-rank/issues"
+  },
+  "funding": [
+    {
+      "type": "github",
+      "url": "https://github.com/sponsors/Houseofmvps"
+    },
+    {
+      "type": "individual",
+      "url": "https://www.kailxlabs.co"
+    }
+  ],
   "license": "MIT",
   "engines": {
     "node": ">=18.0.0"
