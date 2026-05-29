@@ -477,6 +477,12 @@ See [SECURITY.md](SECURITY.md) for the full vulnerability disclosure policy.
 
 ---
 
+## The methodology behind the rules
+
+claude-rank's 170+ rules encode the same answer engineering playbook KailxLabs uses on client builds. The open version lives here: [Answer Engine Optimization Playbook](https://github.com/Houseofmvps/answer-engine-optimization). The version we build for you, with a 45 day citation guarantee across ChatGPT, Perplexity, Gemini, Claude, and Google AI, lives at [kailxlabs.co](https://www.kailxlabs.co).
+
+---
+
 ## Sponsor This Project
 
 I built claude-rank alone — nights and weekends, between building my own SaaS products. No VC funding. No team. Just one person who got tired of being invisible to AI search and decided to fix it for everyone.
