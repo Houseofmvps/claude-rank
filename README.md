@@ -527,6 +527,6 @@ MIT — [LICENSE](LICENSE). **Free forever.** No pro tier. No paywalls.
 
 **Every star makes this project more visible to developers who need it.**
 
-[Star it now](https://github.com/Houseofmvps/claude-rank) | [Follow @kaileskkhumar](https://x.com/kaileskkhumar) | [Sponsor](https://github.com/sponsors/Houseofmvps)
+[Star it now](https://github.com/Houseofmvps/claude-rank) | [Follow @kaileskkhumar](https://x.com/kaileskkhumar) | [Sponsor](https://github.com/sponsors/Houseofmvps) | [Book a call](https://cal.com/houseofmvps/30-min-strategy-call-with-kailesk-khumar)
 
 </div>
